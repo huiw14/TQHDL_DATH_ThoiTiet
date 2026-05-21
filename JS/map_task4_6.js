@@ -151,7 +151,46 @@ async function renderVietnamChoropleth() {
       .attr('font-weight', 600)
       .text('Nhiệt độ trung bình (°C)');
 
-    // 8) Optional: outline coastline or borders already drawn above
+      // ==========================================
+    // 8) TASK 6: Hiển thị các điểm (trạm) đo thời tiết (Thủy)
+    // ==========================================
+    
+    // Bước 1: Lọc ra danh sách các trạm đo duy nhất (mỗi tỉnh lấy 1 tọa độ lat/lon)
+    const uniqueStations = [];
+    const seenProvinces = new Set();
+    
+    allRecords.forEach(d => {
+      // Kiểm tra dữ liệu hợp lệ và chưa từng xuất hiện trong Set
+      if (d.lat && d.lon && d.province && !seenProvinces.has(d.province)) {
+        seenProvinces.add(d.province);
+        uniqueStations.push({
+          province: d.province,
+          lat: +d.lat,     // Đảm bảo ép kiểu về số
+          lon: +d.lon
+        });
+      }
+    });
+
+    // Bước 2: Tạo một thẻ <g> riêng để chứa các chấm tròn, giúp layer không bị lộn xộn
+    const stationsG = svg.append('g').attr('class', 'stations-layer');
+
+    // Bước 3 & 4: Render các thẻ <circle>
+    stationsG.selectAll('.station-dot')
+      .data(uniqueStations)
+      .enter()
+      .append('circle')
+      .attr('class', 'station-dot')
+      .attr('cx', d => projection([d.lon, d.lat])[0]) 
+      .attr('cy', d => projection([d.lon, d.lat])[1])
+      .attr('r', 4)
+      .on('mouseover', function(event, d) {
+          // TODO (Khôi): Code show tooltip
+      })
+      .on('mouseout', function(event, d) {
+          // TODO (Khôi): Code giấu tooltip
+      });
+
+
 
   } catch (err) {
     console.error('Lỗi khi vẽ bản đồ:', err);

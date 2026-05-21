@@ -237,3 +237,20 @@ svg { display: block; overflow: visible; }
     transition: opacity 0.2s;
     z-index: 1000;
 }
+
+
+/* Task 6: Station Dots trên bản đồ */
+.station-dot {
+    fill: var(--text-main);
+    stroke: #ffffff;
+    stroke-width: 1.5px;
+    opacity: 0.8;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.station-dot:hover {
+    fill: var(--primary); /* Đổi màu xanh primary khi hover */
+    r: 7px; /* Phóng to bán kính */
+    opacity: 1;
+}
