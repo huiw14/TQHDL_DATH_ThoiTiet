@@ -1,40 +1,41 @@
 // Task 9: Xem tỷ lệ mưa/nắng giữa các vùng 
 // Pie Chart (Tỷ lệ ngày đo của 3 miền) -> Click -> Bar Chart (Chi tiết thời tiết miền đó)
 
-document.addEventListener("DOMContentLoaded", function() {
-    // Chờ main.js tải dữ liệu xong
-    const checkData = setInterval(() => {
-        if (window.globalWeatherData && Object.keys(window.globalWeatherData).length > 0) {
-            clearInterval(checkData);
-            initTask9();
-        }
-    }, 500);
-});
-
 // Mapping vùng địa lý sang 3 miền chính 
 const regionGroupMap = {
-    'Đồng Bằng Sông Hồng': 'Bắc',
-    'Trung du và miền núi Bắc Bộ': 'Bắc',
-    'Bắc Trung Bộ và Duyên hải miền Trung': 'Trung',
-    'Tây Nguyên': 'Trung',
-    'Đông Nam Bộ': 'Nam',
-    'Đồng Bằng Sông Cửu Long': 'Nam'
+    'dong bang song hong': 'Bắc',
+    'trung du va mien nui bac bo': 'Bắc',
+    'bac trung bo va duyen hai mien trung': 'Trung',
+    'tay nguyen': 'Trung',
+    'dong nam bo': 'Nam',
+    'dong bang song cuu long': 'Nam'
 };
 
 let pieSvg, barSvg, x9, y9, xAxis9, yAxis9;
 let colorScale;
 
-function initTask9() {
-    const data = window.globalWeatherData;
+function normalizeRegionName(name) {
+    return String(name || "")
+        .replace(/\s*\[\*\]\s*/g, "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w ]+/g, " ")
+    .replace(/\s+/g, " ")
+        .toLowerCase()
+        .trim();
+}
+
+function initTask9(records) {
+    const source = Array.isArray(records) && records.length
+        ? records
+        : (window.globalWeatherRecords || []);
 
     // 1. Tiền xử lý: Gom dữ liệu về 3 miền chính
     const processedData = { "Bắc": [], "Trung": [], "Nam": [] };
-    
-    Object.entries(data).forEach(([subRegion, records]) => {
-        const mainRegion = regionGroupMap[subRegion];
-        if (mainRegion) {
-            processedData[mainRegion].push(...records);
-        }
+
+    source.forEach(record => {
+        const mainRegion = regionGroupMap[normalizeRegionName(record.region)];
+        if (mainRegion) processedData[mainRegion].push(record);
     });
 
     // Tính tổng số ngày đo của mỗi miền cho Pie Chart
@@ -48,11 +49,18 @@ function initTask9() {
         .domain(["Bắc", "Trung", "Nam"])
         .range(["#4e79a7", "#f28e2b", "#59a14f"]); 
 
+    const nonEmptyPieData = pieData.filter(d => d.count > 0);
+    if (!nonEmptyPieData.length) {
+        d3.select("#pie-task9").selectAll("*").remove();
+        d3.select("#bar-task9").selectAll("*").remove();
+        return;
+    }
+
     // --- VẼ PIE CHART ---
-    drawPieChart(pieData);
+    drawPieChart(nonEmptyPieData);
 
     // --- KHỞI TẠO BAR CHART (Mặc định miền Bắc) ---
-    drawBarChart(pieData[0].details, pieData[0].region);
+    drawBarChart(nonEmptyPieData[0].details, nonEmptyPieData[0].region);
 }
 
 function drawPieChart(pieData) {
@@ -225,3 +233,7 @@ function updateBarChartTask9(records, regionName) {
         .attr("height", d => (y9(0) - y9(d.count)))
         .attr("fill", colorScale(regionName));
 }
+
+document.addEventListener("dataChanged", function (event) {
+    initTask9(event.detail.data || []);
+});

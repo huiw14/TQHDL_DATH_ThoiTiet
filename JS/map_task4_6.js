@@ -1,93 +1,83 @@
-// Choropleth Map - tô màu tỉnh/thành theo nhiệt độ trung bình
-// Render vào: <svg id="vietnam-map"></svg>
-// Sử dụng: Data/vietnam_geojson.json và Data/weather_dataset.json
+// Task 4/6 - Bản đồ choropleth + trạm đo, cập nhật từ bộ lọc chung
 
-document.addEventListener('DOMContentLoaded', renderVietnamChoropleth);
+let task46GeoData = null;
+let task46CurrentData = [];
 
-async function renderVietnamChoropleth() {
+async function ensureGeoData() {
+  if (task46GeoData) return task46GeoData;
+  task46GeoData = await d3.json('./Data/vietnam_geojson.json');
+  return task46GeoData;
+}
+
+async function renderVietnamChoropleth(records) {
   try {
-    // Load GeoJSON và dữ liệu thời tiết
-    const [geo, weatherData] = await Promise.all([
-      d3.json('./Data/vietnam_geojson.json'),
-      d3.json('./Data/weather_dataset.json')
-    ]);
+    if (Array.isArray(records)) {
+      task46CurrentData = records;
+    }
 
-    // Lấy svg hiện có (được khai báo trong index.html)
+    const geo = await ensureGeoData();
+    const source = task46CurrentData.length ? task46CurrentData : (window.globalWeatherRecords || []);
+
     const svg = d3.select('#vietnam-map');
     if (svg.empty()) {
       console.error('Không tìm thấy svg#vietnam-map');
       return;
     }
 
-    // Xóa nội dung cũ
     svg.selectAll('*').remove();
 
-    // Kích thước từ thuộc tính của SVG
     const width = svg.node().clientWidth || +svg.attr('width') || 800;
     const height = svg.node().clientHeight || +svg.attr('height') || 500;
     svg.attr('viewBox', `0 0 ${width} ${height}`);
 
-    // 1) Tiền xử lý dữ liệu thời tiết: flatten tất cả các bản ghi
-    const allRecords = [];
-    Object.values(weatherData).forEach(arr => arr.forEach(r => allRecords.push(r)));
-
-    // 2) Tính nhiệt độ trung bình theo tỉnh/thành (trường province trong dataset)
     const avgByProvince = d3.rollups(
-      allRecords.filter(d => d && d.province && isFinite(d.temp)),
+      source.filter(d => d && d.province && Number.isFinite(d.temp)),
       v => d3.mean(v, d => d.temp),
       d => normalizeName(d.province)
     ).map(([provinceNorm, avg]) => ({ provinceNorm, avg }));
 
-    // Tạo map nhanh provinceNorm -> avg
     const provinceAvgMap = new Map(avgByProvince.map(d => [d.provinceNorm, d.avg]));
 
-    // 3) Chuẩn bị projection và path
-    const projection = d3.geoMercator()
-      .fitSize([width, height], geo);
+    const projection = d3.geoMercator().fitSize([width, height], geo);
     const path = d3.geoPath().projection(projection);
 
-    // 4) Tìm dãy giá trị min/max để tạo thang màu
     const temps = Array.from(provinceAvgMap.values());
     const tempMin = temps.length ? d3.min(temps) : 0;
     const tempMax = temps.length ? d3.max(temps) : 40;
 
-    // Màu: nhạt (thấp) -> đậm (cao)
     const color = d3.scaleSequential()
       .domain([tempMin, tempMax])
       .interpolator(d3.interpolateYlOrRd);
 
-    // 5) Tooltip
-    const tooltip = d3.select('body').append('div')
-      .attr('class', 'map-tooltip')
-      .style('position', 'absolute')
-      .style('pointer-events', 'none')
-      .style('background', 'rgba(255,255,255,0.95)')
-      .style('border', '1px solid #ccc')
-      .style('padding', '8px')
-      .style('border-radius', '4px')
-      .style('box-shadow', '0 2px 6px rgba(0,0,0,0.15)')
-      .style('display', 'none')
-      .style('font-size', '13px');
+    let tooltip = d3.select('#map-global-tooltip');
+    if (tooltip.empty()) {
+      tooltip = d3.select('body').append('div')
+        .attr('id', 'map-global-tooltip')
+        .attr('class', 'map-tooltip')
+        .style('position', 'absolute')
+        .style('pointer-events', 'none')
+        .style('background', 'rgba(255,255,255,0.95)')
+        .style('border', '1px solid #ccc')
+        .style('padding', '8px')
+        .style('border-radius', '4px')
+        .style('box-shadow', '0 2px 6px rgba(0,0,0,0.15)')
+        .style('display', 'none')
+        .style('font-size', '13px');
+    }
 
-    // 6) Vẽ các tỉnh
     svg.append('g').attr('class', 'provinces')
       .selectAll('path')
       .data(geo.features)
       .enter()
       .append('path')
       .attr('d', path)
-      .attr('fill', d => {
-        const name = normalizeName(d.properties.Name || d.properties.Name_1 || d.properties.NAME || '');
-        const avg = provinceAvgMap.get(name);
-        return avg == null ? '#f0f0f0' : color(avg);
-      })
+      .attr('fill', '#f0f0f0')
       .attr('stroke', '#999')
       .attr('stroke-width', 0.4)
       .on('mouseover', function(event, d) {
         d3.select(this).raise().attr('stroke-width', 1).attr('stroke', '#333');
-        const nameRaw = d.properties.Name || d.properties.Name_1 || d.properties.NAME || 'Không rõ';
-        const name = normalizeName(nameRaw);
-        const avg = provinceAvgMap.get(name);
+        const nameRaw = d.properties.Name || d.properties.Name_1 || d.properties.NAME || 'Khong ro';
+        const avg = provinceAvgMap.get(normalizeName(nameRaw));
         tooltip.style('display', 'block')
           .html(`<strong>${escapeHtml(nameRaw)}</strong><br/>` +
             (avg == null ? 'Không có dữ liệu' : `Nhiệt độ trung bình: ${avg.toFixed(1)} °C`));
@@ -99,19 +89,23 @@ async function renderVietnamChoropleth() {
       .on('mouseout', function() {
         d3.select(this).attr('stroke-width', 0.4).attr('stroke', '#999');
         tooltip.style('display', 'none');
+      })
+      .transition()
+      .duration(650)
+      .attr('fill', d => {
+        const name = normalizeName(d.properties.Name || d.properties.Name_1 || d.properties.NAME || '');
+        const avg = provinceAvgMap.get(name);
+        return avg == null ? '#f0f0f0' : color(avg);
       });
 
-    // 7) Legend - gradient rectangle with labels
     const legendWidth = 220;
     const legendHeight = 10;
     const legendX = width - legendWidth - 20;
     const legendY = height - 40;
 
-    // defs + linearGradient
     const defs = svg.append('defs');
     const gradId = 'legend-gradient-temp';
     const gradient = defs.append('linearGradient').attr('id', gradId).attr('x1', '0%').attr('x2', '100%');
-    // create stops
     const stops = 6;
     for (let i = 0; i <= stops; i++) {
       const t = i / stops;
@@ -120,7 +114,6 @@ async function renderVietnamChoropleth() {
         .attr('stop-color', color(tempMin + t * (tempMax - tempMin)));
     }
 
-    // draw legend group
     const legendG = svg.append('g').attr('class', 'legend').attr('transform', `translate(${legendX},${legendY})`);
     legendG.append('rect')
       .attr('width', legendWidth)
@@ -128,13 +121,13 @@ async function renderVietnamChoropleth() {
       .style('fill', `url(#${gradId})`)
       .style('stroke', '#ccc');
 
-    // legend labels (min and max)
     legendG.append('text')
       .attr('x', 0)
       .attr('y', legendHeight + 14)
       .attr('font-size', 11)
       .attr('fill', '#333')
       .text(`${tempMin.toFixed(1)} °C`);
+
     legendG.append('text')
       .attr('x', legendWidth)
       .attr('y', legendHeight + 14)
@@ -143,7 +136,6 @@ async function renderVietnamChoropleth() {
       .attr('fill', '#333')
       .text(`${tempMax.toFixed(1)} °C`);
 
-    // legend title
     svg.append('text')
       .attr('x', legendX)
       .attr('y', legendY - 6)
@@ -151,72 +143,57 @@ async function renderVietnamChoropleth() {
       .attr('font-weight', 600)
       .text('Nhiệt độ trung bình (°C)');
 
-      
-    // 8) TASK 6: Hiển thị các điểm (trạm) đo thời tiết 
-    
-    // Bước 1: Lọc ra danh sách các trạm đo duy nhất (mỗi tỉnh lấy 1 tọa độ lat/lon)
     const uniqueStations = [];
     const seenProvinces = new Set();
-    
-    allRecords.forEach(d => {
-      // Kiểm tra dữ liệu hợp lệ và chưa từng xuất hiện trong Set
+
+    source.forEach(d => {
       if (d.lat && d.lon && d.province && !seenProvinces.has(d.province)) {
         seenProvinces.add(d.province);
         uniqueStations.push({
           province: d.province,
-          lat: +d.lat,     // Đảm bảo ép kiểu về số
+          lat: +d.lat,
           lon: +d.lon
         });
       }
     });
 
-    // Bước 2: Tạo một thẻ <g> riêng để chứa các chấm tròn, giúp layer không bị lộn xộn
     const stationsG = svg.append('g').attr('class', 'stations-layer');
 
-    // Bước 3 & 4: Render các thẻ <circle>
     stationsG.selectAll('.station-dot')
       .data(uniqueStations)
       .enter()
       .append('circle')
       .attr('class', 'station-dot')
-      .attr('cx', d => projection([d.lon, d.lat])[0]) 
+      .attr('cx', d => projection([d.lon, d.lat])[0])
       .attr('cy', d => projection([d.lon, d.lat])[1])
-      .attr('r', 4)
+      .attr('r', 0)
       .on('mouseover', function(event, d) {
-          tooltip.style('display', 'block')
-                 .style('opacity', 1)
-                 // Dùng .toFixed(2) để làm tròn 2 chữ số và thêm ký hiệu độ
-                 .html(`<strong>📍 Trạm: ${d.province}</strong><br/>
-                        <span class="tooltip-subtext">Lat: ${d.lat.toFixed(2)}°N | Lon: ${d.lon.toFixed(2)}°E</span>`);
+        tooltip.style('display', 'block')
+          .style('opacity', 1)
+          .html(`<strong>Trạm: ${escapeHtml(d.province)}</strong><br/>` +
+            `<span class="tooltip-subtext">Lat: ${d.lat.toFixed(2)} | Lon: ${d.lon.toFixed(2)}</span>`);
       })
       .on('mousemove', function(event) {
-          // Bắt tọa độ chuột để tooltip trôi theo
-          tooltip.style('left', (event.pageX + 12) + 'px')
-                 .style('top', (event.pageY - 28) + 'px');
+        tooltip.style('left', (event.pageX + 12) + 'px')
+          .style('top', (event.pageY - 28) + 'px');
       })
-      .on('mouseout', function(event, d) {
-          // TODO (Khôi): Code giấu tooltip
-          // Giấu tooltip khi chuột rời đi
-          tooltip.style('display', 'none')
-                 .style('opacity', 0);
-      });
-
-
+      .on('mouseout', function() {
+        tooltip.style('display', 'none').style('opacity', 0);
+      })
+      .transition()
+      .duration(450)
+      .attr('r', 4);
 
   } catch (err) {
     console.error('Lỗi khi vẽ bản đồ:', err);
   }
 }
 
-// Helpers
 function normalizeName(s) {
   if (!s) return '';
-  // Lowercase, trim, remove diacritics, punctuation, extra spaces
   const str = s.toString().toLowerCase().trim();
-  // Normalize NFD then remove diacritics
-  const noDiacritics = str.normalize('NFD').replace(/\p{Diacritic}/gu, '');
-  // Remove punctuation and extra spaces
-  return noDiacritics.replace(/[^\p{L}\p{N} ]+/gu, ' ').replace(/\s+/g, ' ').trim();
+  const noDiacritics = str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return noDiacritics.replace(/[^\w ]+/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 function escapeHtml(str) {
@@ -227,3 +204,7 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
+
+document.addEventListener('dataChanged', function (event) {
+  renderVietnamChoropleth(event.detail.data || []);
+});

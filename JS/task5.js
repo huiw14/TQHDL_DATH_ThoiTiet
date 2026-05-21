@@ -22,19 +22,28 @@ function debounce(fn, wait = 120) {
     };
 }
 
-function renderTask5() {
+let task5CurrentData = [];
+
+function renderTask5(records) {
+    if (Array.isArray(records)) {
+        task5CurrentData = records;
+    }
+
     chart5Container.selectAll("*").remove();
-    d3.json("Data/weather_dataset.json").then(rawData => {
-        const records = Object.values(rawData).flat();
-        if (!records.length) {
-            chart5Container.append("p")
-                .text("Không có dữ liệu để hiển thị Task 5")
-                .style("color", "#334155");
-            return;
-        }
+
+    const recordsToRender = task5CurrentData.length
+        ? task5CurrentData
+        : (window.globalWeatherRecords || []);
+
+    if (!recordsToRender.length) {
+        chart5Container.append("p")
+            .text("Không có dữ liệu để hiển thị Task 5")
+            .style("color", "#334155");
+        return;
+    }
 
         const groups = d3.rollups(
-            records,
+            recordsToRender,
             values => ({
                 meanTemp: d3.mean(values, d => d.temp),
                 count: values.length
@@ -147,13 +156,10 @@ function renderTask5() {
             .attr("transform", `translate(-42, ${innerHeight / 2}) rotate(-90)`)
             .attr("text-anchor", "middle")
             .text("Nhiệt độ (°C)");
-    }).catch(error => {
-        console.error("Task 5: Lỗi tải dữ liệu JSON:", error);
-        chart5Container.append("p")
-            .text("Không thể tải dữ liệu cho Task 5.")
-            .style("color", "#dc2626");
-    });
 }
 
-renderTask5();
-window.addEventListener("resize", debounce(renderTask5, 180));
+document.addEventListener("dataChanged", function (event) {
+    renderTask5(event.detail.data || []);
+});
+
+window.addEventListener("resize", debounce(() => renderTask5(), 180));

@@ -1,45 +1,155 @@
-// Biến toàn cục để các file task khác có thể truy cập
 window.globalWeatherData = {};
+window.globalWeatherRecords = [];
 
-// 1. Tải dữ liệu JSON
+let updateAnimationTimer = null;
+
 d3.json("Data/weather_dataset.json").then(function (data) {
     window.globalWeatherData = data;
+    window.globalWeatherRecords = flattenWeatherData(data);
 
-    // 2. Lấy danh sách các Vùng để đổ vào Dropdown
-    const regions = Object.keys(data);
-    const select = d3.select("#regionSelect");
+    const select = d3.select("#globalFilterSelect");
+    buildGlobalFilterOptions(select, data);
 
-    select.html(""); // Xóa option "Đang tải..."
+    const initialRegion = Object.keys(data)[0];
+    const initialValue = `region::${normalizeRegionName(initialRegion)}`;
+    select.property("value", initialValue);
+    updateChart(initialValue);
 
-    regions.forEach(region => {
-        select.append("option").text(region).attr("value", region);
-    });
-
-    // 3. Khởi tạo biểu đồ lần đầu với vùng đầu tiên
-    let initialRegion = regions[0];
-    dispatchDataUpdate(initialRegion);
-
-    // 4. Lắng nghe sự kiện người dùng đổi Filter
     select.on("change", function () {
-        let selectedRegion = d3.select(this).property("value");
-        dispatchDataUpdate(selectedRegion);
+        const selectedValue = d3.select(this).property("value");
+        updateChart(selectedValue);
     });
-
 }).catch(error => {
     console.error("Lỗi tải dữ liệu JSON:", error);
 });
 
-// Hàm điều phối chung (Gọi các hàm update của từng Task)
-function dispatchDataUpdate(regionName) {
-    const regionData = window.globalWeatherData[regionName];
+function flattenWeatherData(dataByRegion) {
+    const records = [];
+    Object.entries(dataByRegion).forEach(([region, rows]) => {
+        const regionKey = normalizeRegionName(region);
+        rows.forEach(row => {
+            const month = extractMonth(row.date);
+            records.push({
+                ...row,
+                region,
+                regionKey,
+                month
+            });
+        });
+    });
+    return records;
+}
 
-    // Cập nhật Detail Card
-    updateTask3_DetailCard(regionData[0]); // Lấy data tỉnh đầu tiên làm mặc định
+function normalizeRegionName(regionName) {
+    return String(regionName || "")
+    .replace(/\s*\[\*\]\s*/g, "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+}
 
-    // Bắn một Custom Event để báo cho các file js/task*.js biết đã có data mới
-    // Anh em team chỉ cần dán đoạn lắng nghe sự kiện này vào file của họ
-    const event = new CustomEvent("dataChanged", { detail: { region: regionName, data: regionData } });
+function extractMonth(dateString) {
+    if (!dateString || typeof dateString !== "string") return null;
+    const chunks = dateString.split("-");
+    if (chunks.length < 2) return null;
+    return chunks[1];
+}
+
+function buildGlobalFilterOptions(select, dataByRegion) {
+    select.html("");
+
+    const regions = Array.from(
+        new Map(
+            Object.keys(dataByRegion).map(region => [normalizeRegionName(region), region])
+        ).entries()
+    ).map(([regionKey, displayName]) => ({ regionKey, displayName }));
+    const months = Array.from(
+        new Set(window.globalWeatherRecords.map(d => d.month).filter(Boolean))
+    ).sort((a, b) => Number(a) - Number(b));
+
+    const allOption = select.append("option")
+        .attr("value", "all::all")
+        .text("Tất cả dữ liệu");
+
+    select.append("optgroup").attr("label", "Lọc theo vùng")
+        .selectAll("option")
+        .data(regions)
+        .enter()
+        .append("option")
+        .attr("value", d => `region::${d.regionKey}`)
+        .text(d => d.displayName);
+
+    select.append("optgroup").attr("label", "Lọc theo tháng")
+        .selectAll("option")
+        .data(months)
+        .enter()
+        .append("option")
+        .attr("value", d => `month::${d}`)
+        .text(d => `Tháng ${Number(d)}`);
+
+    allOption.property("selected", false);
+}
+
+function updateChart(filterToken) {
+    if (!window.globalWeatherRecords.length) return;
+
+    const [filterType, rawValue] = String(filterToken || "all::all").split("::");
+    let filteredRecords = window.globalWeatherRecords;
+    let selectedRegion = "Tất cả vùng";
+    let selectedMonth = "Tất cả tháng";
+    let badgeText = "Tất cả dữ liệu";
+
+    if (filterType === "region") {
+        filteredRecords = window.globalWeatherRecords.filter(d => d.regionKey === rawValue);
+        const selectedRegionRecord = filteredRecords[0];
+        selectedRegion = selectedRegionRecord ? selectedRegionRecord.region : rawValue;
+        badgeText = `Vùng ${selectedRegion}`;
+    } else if (filterType === "month") {
+        filteredRecords = window.globalWeatherRecords.filter(d => d.month === rawValue);
+        selectedMonth = `Tháng ${Number(rawValue)}`;
+        badgeText = `Tháng ${Number(rawValue)}`;
+    }
+
+    if (filterType === "all") {
+        badgeText = "Tất cả dữ liệu";
+    }
+
+    updateFilterBadge(badgeText, filteredRecords.length);
+
+    animateDashboardUpdate();
+    updateTask3_DetailCard(filteredRecords[0]);
+
+    const event = new CustomEvent("dataChanged", {
+        detail: {
+            filterType,
+            filterValue: rawValue,
+            region: selectedRegion,
+            month: selectedMonth,
+            data: filteredRecords,
+            raw: window.globalWeatherData
+        }
+    });
     document.dispatchEvent(event);
+}
+
+window.updateChart = updateChart;
+
+function updateFilterBadge(label, recordCount) {
+    const badge = document.getElementById("filterBadge");
+    if (!badge) return;
+
+    badge.textContent = `${label} • ${recordCount} bản ghi`;
+}
+
+function animateDashboardUpdate() {
+    document.body.classList.add("is-updating");
+    if (updateAnimationTimer) {
+        clearTimeout(updateAnimationTimer);
+    }
+    updateAnimationTimer = setTimeout(() => {
+        document.body.classList.remove("is-updating");
+    }, 260);
 }
 
 // ==========================================

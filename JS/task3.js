@@ -17,7 +17,6 @@ async function loadWeatherData() {
         regionsList.sort();
         
         initializeRegionList();
-        loadRegionSelect();
         
     } catch (error) {
         console.error('Lỗi tải dữ liệu:', error);
@@ -184,44 +183,24 @@ function updateConditionList(conditions) {
     });
 }
 
-// Cập nhật region select dropdown
-function loadRegionSelect() {
-    const regionSelect = document.getElementById('regionSelect');
-    if (!regionSelect) return;
-    
-    regionSelect.innerHTML = '';
-    
-    const allOption = document.createElement('option');
-    allOption.value = 'all';
-    allOption.textContent = 'Tất cả vùng';
-    regionSelect.appendChild(allOption);
-    
-    regionsList.forEach(region => {
-        const option = document.createElement('option');
-        option.value = region;
-        option.textContent = region;
-        regionSelect.appendChild(option);
-    });
-    
-    regionSelect.addEventListener('change', (e) => {
-        if (e.target.value !== 'all') {
-            // Trigger click trên region item tương ứng
-            const regionItem = document.querySelector(
-                `.region-item:contains('${e.target.value}')`
-            );
-            if (regionItem) regionItem.click();
-            else {
-                // Alternative approach
-                const items = document.querySelectorAll('.region-item');
-                items.forEach(item => {
-                    if (item.textContent === e.target.value) {
-                        item.click();
-                    }
-                });
-            }
-        }
-    });
-}
+document.addEventListener('dataChanged', (event) => {
+    const records = event.detail.data || [];
+    if (!records.length || !document.getElementById('avg-temp')) return;
+
+    const selectedRegionTitle = document.getElementById('selected-region-title');
+    if (selectedRegionTitle && event.detail.filterType === 'month') {
+        selectedRegionTitle.textContent = `${event.detail.month} - Tong hop`;
+    }
+
+    const stats = calculateStats(records);
+    document.getElementById('avg-temp').textContent = stats.avgTemp.toFixed(2) + ' °C';
+    document.getElementById('avg-rain').textContent = stats.avgRain.toFixed(2) + ' mm';
+    document.getElementById('avg-wind').textContent = stats.avgWind.toFixed(2) + ' kph';
+    document.getElementById('avg-humidity').textContent = stats.avgHumidity.toFixed(2) + ' %';
+    document.getElementById('avg-uv').textContent = stats.avgUv.toFixed(2);
+    document.getElementById('total-records').textContent = records.length;
+    updateConditionList(stats.conditions);
+});
 
 // Khởi động khi trang load
 document.addEventListener('DOMContentLoaded', loadWeatherData);

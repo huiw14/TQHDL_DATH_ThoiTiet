@@ -1,101 +1,79 @@
 // D3.js Bar Chart - Nhiệt độ trung bình theo trạng thái thời tiết
-// Render vào: <div id="chart-task8"></div> (hỗ trợ cả <svg id="chart-task8"> nếu có)
-// Dùng d3.rollups() để gom nhóm theo `condition` và d3.mean() để tính trung bình
 
-// Gọi khi DOM sẵn sàng
-document.addEventListener('DOMContentLoaded', loadAndRenderTask8);
+let task8CurrentData = [];
 
-async function loadAndRenderTask8() {
+function renderTask8(records) {
+  if (Array.isArray(records)) {
+    task8CurrentData = records;
+  }
+
   try {
-    // Load dữ liệu (đường dẫn tương đối từ index.html)
-    const data = await d3.json('./Data/weather_dataset.json');
-
-    // Chọn container: ưu tiên div#chart-task8, nếu không có thì dùng svg#chart-task8
+    const source = task8CurrentData.length ? task8CurrentData : (window.globalWeatherRecords || []);
     let container = d3.select('#chart-task8');
     const isSvg = container.node() && container.node().tagName.toLowerCase() === 'svg';
 
-    // Nếu không tìm thấy bất kỳ phần tử nào, tạo div#chart-task8 trong body
     if (container.empty()) {
       container = d3.select('body').append('div').attr('id', 'chart-task8');
     }
 
-    // Xóa nội dung cũ trước khi render
     container.selectAll('*').remove();
 
-    // Gom nhóm theo condition và tính nhiệt độ trung bình
-    const allRecords = [];
-    Object.values(data).forEach(records => {
-      records.forEach(r => allRecords.push(r));
-    });
+    const filtered = source.filter(d => d && d.condition && Number.isFinite(d.temp));
 
-    // Loại bỏ bản ghi không có condition hoặc temp
-    const filtered = allRecords.filter(d => d && d.condition && isFinite(d.temp));
-
-    // Dùng d3.rollups để tính mean temp theo condition
     const avgByCondition = d3.rollups(
       filtered,
       v => d3.mean(v, d => d.temp),
       d => d.condition
     ).map(([condition, avg]) => ({ condition, avg }));
 
-    // Sắp xếp theo nhiệt độ giảm dần để dễ so sánh
     avgByCondition.sort((a, b) => d3.descending(a.avg, b.avg));
 
-    // Kích thước - nếu container là svg thì lấy kích thước hiện có, ngược lại tạo SVG bên trong div
     let svg;
-    let width, height, margin;
+    let width;
+    let height;
     if (isSvg) {
       svg = container;
       width = svg.node().clientWidth || 400;
       height = svg.node().clientHeight || 250;
     } else {
-      // đặt kích thước mặc định, sẽ responsive theo div
       width = Math.min(760, Math.max(360, container.node().clientWidth || 760));
       height = 300;
       svg = container.append('svg')
-        .attr('Width', width)
+        .attr('width', width)
         .attr('height', height)
         .style('display', 'block')
         .style('margin', '0 auto');
     }
 
-    // Margin cho biểu đồ (nhỏ gọn để vừa trong dashboard)
-    margin = { top: 40, right: 20, bottom: 70, left: 60 };
+    const margin = { top: 40, right: 20, bottom: 70, left: 60 };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
 
-    // Scales
     const x = d3.scaleBand()
       .domain(avgByCondition.map(d => d.condition))
       .range([0, innerWidth])
       .padding(0.25);
 
     const y = d3.scaleLinear()
-      .domain([0, d3.max(avgByCondition, d => d.avg) === undefined ? 0 : d3.max(avgByCondition, d => d.avg) + 2])
+      .domain([0, d3.max(avgByCondition, d => d.avg) || 0])
       .nice()
       .range([innerHeight, 0]);
 
-    // Group chính
     const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 
-    // Trục X
-    const xAxis = d3.axisBottom(x);
     g.append('g')
       .attr('transform', `translate(0,${innerHeight})`)
-      .call(xAxis)
+      .call(d3.axisBottom(x))
       .selectAll('text')
       .style('font-size', '11px')
       .attr('transform', 'rotate(-30)')
       .attr('text-anchor', 'end');
 
-    // Trục Y
-    const yAxis = d3.axisLeft(y).ticks(5);
     g.append('g')
-      .call(yAxis)
+      .call(d3.axisLeft(y).ticks(5))
       .selectAll('text')
       .style('font-size', '11px');
 
-    // Tạo tooltip (nằm ở body) - dùng template hover_bar.html style nếu có
     let tooltip = d3.select('#tooltip-task8');
     if (tooltip.empty()) {
       tooltip = d3.select('body').append('div')
@@ -111,27 +89,24 @@ async function loadAndRenderTask8() {
         .style('display', 'none');
     }
 
-    // Bars
-    const bars = g.selectAll('.bar')
+    g.selectAll('.bar')
       .data(avgByCondition, d => d.condition)
       .enter()
       .append('rect')
       .attr('class', 'bar')
       .attr('x', d => x(d.condition))
-      .attr('y', d => y(d.avg))
+      .attr('y', innerHeight)
       .attr('width', x.bandwidth())
-      .attr('height', d => innerHeight - y(d.avg))
+      .attr('height', 0)
       .attr('fill', '#4CAF50')
       .attr('opacity', 0.9)
       .on('mouseover', function(event, d) {
-        // Nổi bật cột hiện tại
         d3.select(this)
           .transition().duration(120)
           .attr('fill', '#2E7D32')
           .attr('opacity', 1)
           .attr('transform', 'translate(0,-4)');
 
-        // Hiện tooltip
         tooltip.style('display', 'block')
           .html(`<strong>${escapeHtml(d.condition)}</strong><br/>Nhiệt độ: ${d.avg.toFixed(1)} °C`);
       })
@@ -140,7 +115,6 @@ async function loadAndRenderTask8() {
           .style('top', (event.pageY + 12) + 'px');
       })
       .on('mouseout', function() {
-        // Trả về trạng thái ban đầu
         d3.select(this)
           .transition().duration(120)
           .attr('fill', '#4CAF50')
@@ -148,9 +122,12 @@ async function loadAndRenderTask8() {
           .attr('transform', 'translate(0,0)');
 
         tooltip.style('display', 'none');
-      });
+      })
+      .transition()
+      .duration(700)
+      .attr('y', d => y(d.avg))
+      .attr('height', d => innerHeight - y(d.avg));
 
-    // Giá trị trên đầu mỗi cột
     g.selectAll('.bar-label')
       .data(avgByCondition, d => d.condition)
       .enter()
@@ -161,9 +138,13 @@ async function loadAndRenderTask8() {
       .attr('text-anchor', 'middle')
       .attr('font-size', '12px')
       .attr('fill', '#111')
-      .text(d => d.avg.toFixed(1) + '°C');
+      .style('opacity', 0)
+      .text(d => d.avg.toFixed(1) + 'degC')
+      .transition()
+      .delay(350)
+      .duration(250)
+      .style('opacity', 1);
 
-    // Title
     svg.append('text')
       .attr('x', margin.left + innerWidth / 2)
       .attr('y', margin.top / 2)
@@ -172,7 +153,6 @@ async function loadAndRenderTask8() {
       .attr('font-weight', '600')
       .text('Nhiệt độ trung bình theo trạng thái thời tiết');
 
-    // X axis label
     svg.append('text')
       .attr('x', margin.left + innerWidth / 2)
       .attr('y', height - 6)
@@ -180,7 +160,6 @@ async function loadAndRenderTask8() {
       .attr('font-size', '12px')
       .text('Trạng thái thời tiết');
 
-    // Y axis label
     svg.append('text')
       .attr('transform', `translate(12, ${margin.top + innerHeight / 2}) rotate(-90)`)
       .attr('text-anchor', 'middle')
@@ -188,11 +167,10 @@ async function loadAndRenderTask8() {
       .text('Nhiệt độ trung bình (°C)');
 
   } catch (err) {
-    console.error('Lỗi khi render Task8:', err);
+    console.error('Loi khi render Task8:', err);
   }
 }
 
-// Helper: escape HTML để tránh injection trong tooltip
 function escapeHtml(str) {
   return String(str)
     .replace(/&/g, '&amp;')
@@ -201,3 +179,7 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
+
+document.addEventListener('dataChanged', function (event) {
+  renderTask8(event.detail.data || []);
+});
