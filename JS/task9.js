@@ -110,7 +110,7 @@ function drawPieChart(pieData) {
 
     // Dòng 2: Tính phần trăm
     labels.append("tspan")
-        .attr("class", "pie-percent") // Gắn class CSS vào đây
+        .attr("class", "pie-percent")
         .attr("x", 0)
         .attr("y", "1.2em")
         .text(d => {

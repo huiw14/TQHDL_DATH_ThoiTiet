@@ -183,10 +183,22 @@ async function renderVietnamChoropleth() {
       .attr('cy', d => projection([d.lon, d.lat])[1])
       .attr('r', 4)
       .on('mouseover', function(event, d) {
-          // TODO (Khôi): Code show tooltip
+          tooltip.style('display', 'block')
+                 .style('opacity', 1)
+                 // Dùng .toFixed(2) để làm tròn 2 chữ số và thêm ký hiệu độ
+                 .html(`<strong>📍 Trạm: ${d.province}</strong><br/>
+                        <span class="tooltip-subtext">Lat: ${d.lat.toFixed(2)}°N | Lon: ${d.lon.toFixed(2)}°E</span>`);
+      })
+      .on('mousemove', function(event) {
+          // Bắt tọa độ chuột để tooltip trôi theo
+          tooltip.style('left', (event.pageX + 12) + 'px')
+                 .style('top', (event.pageY - 28) + 'px');
       })
       .on('mouseout', function(event, d) {
           // TODO (Khôi): Code giấu tooltip
+          // Giấu tooltip khi chuột rời đi
+          tooltip.style('display', 'none')
+                 .style('opacity', 0);
       });
 
 

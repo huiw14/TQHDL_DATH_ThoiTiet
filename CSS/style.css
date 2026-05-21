@@ -238,6 +238,11 @@ svg { display: block; overflow: visible; }
     z-index: 1000;
 }
 
+/* Chữ phụ chú nhỏ bên trong Tooltip */
+.tooltip-subtext {
+    font-size: 11px;
+    color: #cccccc;
+}
 
 /* Task 6: Station Dots trên bản đồ */
 .station-dot {
