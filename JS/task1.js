@@ -1,16 +1,203 @@
 // File js/task1.js
 
-// Lắng nghe sự kiện "dataChanged" từ main.js
-document.addEventListener("dataChanged", function(e) {
-    const data = e.detail.data; // Data của vùng đang được chọn
-    
-    // Logic code D3.js vẽ chart Task 1 bắt đầu từ đây
-    console.log("Task 1 nhận được data mới, số dòng:", data.length);
-    
-    // Ví dụ chọn khung của mình để vẽ:
-    // const svg = d3.select("#chart-task1");
-    // svg.selectAll("*").remove(); 
-    // ... [Copy template line_chart.html của thầy vào đây] ...
-    
-    // Nhớ dùng d3.transition()
-});
+const chart1Container = d3.select("#chart-task1");
+const chart1TooltipId = "task1-tooltip";
+
+function createTask1Tooltip() {
+    let tooltip = d3.select(`#${chart1TooltipId}`);
+    if (tooltip.empty()) {
+        tooltip = d3.select("body")
+            .append("div")
+            .attr("id", chart1TooltipId)
+            .attr("class", "tooltip");
+    }
+    return tooltip;
+}
+
+function debounce(fn, wait = 120) {
+    let timeout;
+    return function (...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => fn.apply(this, args), wait);
+    };
+}
+
+function renderTask1() {
+    chart1Container.selectAll("*").remove();
+    d3.json("Data/weather_dataset.json").then(rawData => {
+        const records = Object.values(rawData).flat();
+        if (!records.length) {
+            chart1Container.append("p")
+                .text("Không có dữ liệu để hiển thị Task 1")
+                .style("color", "#334155");
+            return;
+        }
+
+        const parseDate = d3.timeParse("%Y-%m-%d");
+        const data = Array.from(
+            d3.rollups(
+                records,
+                values => d3.mean(values, d => d.temp),
+                d => d.date
+            ),
+            ([date, avgTemp]) => ({
+                date: parseDate(date),
+                avgTemp
+            })
+        )
+            .filter(d => d.date)
+            .sort((a, b) => d3.ascending(a.date, b.date));
+
+        const margin = { top: 28, right: 22, bottom: 40, left: 52 };
+        const width = chart1Container.node().clientWidth || 760;
+        const height = 340;
+        const innerWidth = width - margin.left - margin.right;
+        const innerHeight = height - margin.top - margin.bottom;
+
+        const svg = chart1Container.append("svg")
+            .attr("class", "chart-svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        const defs = svg.append("defs");
+        const gradient = defs.append("linearGradient")
+            .attr("id", "task1-gradient")
+            .attr("x1", "0%")
+            .attr("x2", "0%")
+            .attr("y1", "0%")
+            .attr("y2", "100%");
+
+        gradient.append("stop")
+            .attr("offset", "0%")
+            .attr("stop-color", "#38bdf8")
+            .attr("stop-opacity", 0.38);
+
+        gradient.append("stop")
+            .attr("offset", "100%")
+            .attr("stop-color", "#38bdf8")
+            .attr("stop-opacity", 0);
+
+        const chart = svg.append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        const xScale = d3.scaleTime()
+            .domain(d3.extent(data, d => d.date))
+            .range([0, innerWidth]);
+
+        const yScale = d3.scaleLinear()
+            .domain([d3.min(data, d => d.avgTemp) - 1, d3.max(data, d => d.avgTemp) + 1])
+            .nice()
+            .range([innerHeight, 0]);
+
+        chart.append("g")
+            .attr("class", "grid")
+            .call(d3.axisLeft(yScale)
+                .ticks(5)
+                .tickSize(-innerWidth)
+                .tickFormat(""))
+            .selectAll("line")
+            .attr("stroke-opacity", 0.18);
+
+        const xAxis = d3.axisBottom(xScale)
+            .ticks(5)
+            .tickFormat(d3.timeFormat("%d-%m-%Y"));
+
+        const yAxis = d3.axisLeft(yScale)
+            .ticks(5)
+            .tickSize(-6)
+            .tickPadding(10);
+
+        chart.append("g")
+            .attr("transform", `translate(0, ${innerHeight})`)
+            .attr("class", "axis")
+            .call(xAxis)
+            .selectAll("text")
+            .attr("transform", "translate(0,6)")
+            .style("text-anchor", "middle");
+
+        chart.append("g")
+            .attr("class", "axis")
+            .call(yAxis)
+            .selectAll("text")
+            .style("font-size", "12px");
+
+        const area = d3.area()
+            .curve(d3.curveMonotoneX)
+            .x(d => xScale(d.date))
+            .y0(innerHeight)
+            .y1(d => yScale(d.avgTemp));
+
+        chart.append("path")
+            .datum(data)
+            .attr("d", area)
+            .attr("fill", "url(#task1-gradient)")
+            .attr("opacity", 0.95);
+
+        chart.append("path")
+            .datum(data)
+            .attr("fill", "none")
+            .attr("stroke", "#2563eb")
+            .attr("stroke-width", 3)
+            .attr("stroke-linecap", "round")
+            .attr("stroke-linejoin", "round")
+            .attr("d", d3.line()
+                .curve(d3.curveMonotoneX)
+                .x(d => xScale(d.date))
+                .y(d => yScale(d.avgTemp))
+            )
+            .attr("stroke-dasharray", function () {
+                const totalLength = this.getTotalLength();
+                return `${totalLength} ${totalLength}`;
+            })
+            .attr("stroke-dashoffset", function () {
+                return this.getTotalLength();
+            })
+            .transition()
+            .duration(1400)
+            .attr("stroke-dashoffset", 0);
+
+        const tooltip = createTask1Tooltip();
+
+        chart.selectAll("circle.hover-point")
+            .data(data)
+            .join("circle")
+            .attr("class", "hover-point")
+            .attr("cx", d => xScale(d.date))
+            .attr("cy", d => yScale(d.avgTemp))
+            .attr("r", 8)
+            .attr("fill", "transparent")
+            .attr("cursor", "pointer")
+            .on("mouseenter", function (event, d) {
+                tooltip.style("opacity", 1)
+                    .html(`Ngày: <strong>${d3.timeFormat("%d-%m-%Y")(d.date)}</strong><br>Nhiệt độ: <strong>${d.avgTemp.toFixed(1)}°C</strong>`);
+            })
+            .on("mousemove", function (event) {
+                tooltip.style("left", `${event.pageX + 14}px`)
+                    .style("top", `${event.pageY + 14}px`);
+            })
+            .on("mouseleave", function () {
+                tooltip.style("opacity", 0);
+            });
+
+        chart.append("text")
+            .attr("class", "axis-label")
+            .attr("x", innerWidth / 2)
+            .attr("y", innerHeight + 34)
+            .attr("text-anchor", "middle")
+            .text("Ngày");
+
+        chart.append("text")
+            .attr("class", "axis-label")
+            .attr("transform", `translate(-42, ${innerHeight / 2}) rotate(-90)`)
+            .attr("text-anchor", "middle")
+            .text("Nhiệt độ (°C)");
+    }).catch(error => {
+        console.error("Task 1: Lỗi tải dữ liệu JSON:", error);
+        chart1Container.append("p")
+            .text("Không thể tải dữ liệu cho Task 1.")
+            .style("color", "#dc2626");
+    });
+}
+
+renderTask1();
+window.addEventListener("resize", debounce(renderTask1, 180));
