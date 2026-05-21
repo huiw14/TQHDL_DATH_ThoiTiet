@@ -5,7 +5,6 @@ const margin7 = { top: 30, right: 30, bottom: 40, left: 100 };
 let tooltip7;
 
 // 1. Lắng nghe dữ liệu
-// 1. Lắng nghe dữ liệu
 document.addEventListener("dataChanged", function (event) {
     const regionData = event.detail.data;
     const regionName = event.detail.region;
