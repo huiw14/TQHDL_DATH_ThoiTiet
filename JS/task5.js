@@ -57,10 +57,13 @@ function renderTask5() {
         const innerWidth = width - margin.left - margin.right;
         const innerHeight = height - margin.top - margin.bottom;
 
+        // FIX TRÀN KHUNG: Dùng viewBox để tự động co giãn
         const svg = chart5Container.append("svg")
             .attr("class", "chart-svg")
-            .attr("width", width)
-            .attr("height", height);
+            .attr("width", "100%")
+            .attr("height", "100%")
+            .attr("viewBox", `0 0 ${width} ${height}`)
+            .attr("preserveAspectRatio", "xMidYMid meet");
 
         const chart = svg.append("g")
             .attr("transform", `translate(${margin.left},${margin.top})`);
