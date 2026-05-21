@@ -151,9 +151,8 @@ async function renderVietnamChoropleth() {
       .attr('font-weight', 600)
       .text('Nhiệt độ trung bình (°C)');
 
-      // ==========================================
-    // 8) TASK 6: Hiển thị các điểm (trạm) đo thời tiết (Thủy)
-    // ==========================================
+      
+    // 8) TASK 6: Hiển thị các điểm (trạm) đo thời tiết 
     
     // Bước 1: Lọc ra danh sách các trạm đo duy nhất (mỗi tỉnh lấy 1 tọa độ lat/lon)
     const uniqueStations = [];
