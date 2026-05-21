@@ -237,3 +237,63 @@ svg { display: block; overflow: visible; }
     transition: opacity 0.2s;
     z-index: 1000;
 }
+
+/* Chữ phụ chú nhỏ bên trong Tooltip */
+.tooltip-subtext {
+    font-size: 11px;
+    color: #cccccc;
+}
+
+/* Task 6: Station Dots trên bản đồ */
+.station-dot {
+    fill: var(--text-main);
+    stroke: #ffffff;
+    stroke-width: 1.5px;
+    opacity: 0.8;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.station-dot:hover {
+    fill: var(--primary); /* Đổi màu xanh primary khi hover */
+    r: 7px; /* Phóng to bán kính */
+    opacity: 1;
+}
+
+
+ /* TASK 9: PIE CHART & BAR CHART */
+
+/* 1. Lát cắt của Pie Chart */
+.slice {
+    stroke: #ffffff;
+    cursor: pointer;
+    opacity: 0.8;
+}
+
+/* 2. Chữ hiển thị trên Pie Chart (Tên miền) */
+.pie-label {
+    fill: #ffffff;
+    font-size: 12px;
+    font-weight: bold;
+    pointer-events: none; /* Tránh lỗi click đè lên chữ */
+}
+
+/* 3. Dòng phần trăm (%) trên Pie Chart */
+.pie-percent {
+    font-size: 11px;
+    opacity: 0.9;
+}
+
+/* 4. Tiêu đề Bar Chart */
+#bar-title-task9 {
+    font-size: 14px;
+    font-weight: bold;
+    fill: var(--text-main);
+}
+
+/* 5. Chữ ở trục X của Bar Chart (bị xoay nghiêng) */
+.x-axis-task9 text {
+    font-size: 11px;
+    fill: var(--text-muted); /* Dùng biến màu xám có sẵn trong style.css */
+    text-anchor: end;
+}

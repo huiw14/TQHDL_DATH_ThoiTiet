@@ -151,7 +151,57 @@ async function renderVietnamChoropleth() {
       .attr('font-weight', 600)
       .text('Nhiệt độ trung bình (°C)');
 
-    // 8) Optional: outline coastline or borders already drawn above
+      
+    // 8) TASK 6: Hiển thị các điểm (trạm) đo thời tiết 
+    
+    // Bước 1: Lọc ra danh sách các trạm đo duy nhất (mỗi tỉnh lấy 1 tọa độ lat/lon)
+    const uniqueStations = [];
+    const seenProvinces = new Set();
+    
+    allRecords.forEach(d => {
+      // Kiểm tra dữ liệu hợp lệ và chưa từng xuất hiện trong Set
+      if (d.lat && d.lon && d.province && !seenProvinces.has(d.province)) {
+        seenProvinces.add(d.province);
+        uniqueStations.push({
+          province: d.province,
+          lat: +d.lat,     // Đảm bảo ép kiểu về số
+          lon: +d.lon
+        });
+      }
+    });
+
+    // Bước 2: Tạo một thẻ <g> riêng để chứa các chấm tròn, giúp layer không bị lộn xộn
+    const stationsG = svg.append('g').attr('class', 'stations-layer');
+
+    // Bước 3 & 4: Render các thẻ <circle>
+    stationsG.selectAll('.station-dot')
+      .data(uniqueStations)
+      .enter()
+      .append('circle')
+      .attr('class', 'station-dot')
+      .attr('cx', d => projection([d.lon, d.lat])[0]) 
+      .attr('cy', d => projection([d.lon, d.lat])[1])
+      .attr('r', 4)
+      .on('mouseover', function(event, d) {
+          tooltip.style('display', 'block')
+                 .style('opacity', 1)
+                 // Dùng .toFixed(2) để làm tròn 2 chữ số và thêm ký hiệu độ
+                 .html(`<strong>📍 Trạm: ${d.province}</strong><br/>
+                        <span class="tooltip-subtext">Lat: ${d.lat.toFixed(2)}°N | Lon: ${d.lon.toFixed(2)}°E</span>`);
+      })
+      .on('mousemove', function(event) {
+          // Bắt tọa độ chuột để tooltip trôi theo
+          tooltip.style('left', (event.pageX + 12) + 'px')
+                 .style('top', (event.pageY - 28) + 'px');
+      })
+      .on('mouseout', function(event, d) {
+          // TODO (Khôi): Code giấu tooltip
+          // Giấu tooltip khi chuột rời đi
+          tooltip.style('display', 'none')
+                 .style('opacity', 0);
+      });
+
+
 
   } catch (err) {
     console.error('Lỗi khi vẽ bản đồ:', err);
