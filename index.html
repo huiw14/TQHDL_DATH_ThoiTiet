@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Thời Tiết Việt Nam - Nhóm 5</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -22,69 +25,140 @@
         </div>
     </header>
 
+    <section id="kpi-cards" class="card kpi-panel">
+        <div class="kpi-panel-header">
+            <div>
+                <h2>Task 3: Chỉ số vùng đang chọn</h2>
+                <p>Khu vực: <span id="detail-province">Chưa chọn</span> | Trạng thái: <span id="kpi-condition">--</span></p>
+            </div>
+        </div>
+        <div class="kpi-cards-grid">
+            <article class="kpi-card">
+                <span class="kpi-label">Nhiệt độ</span>
+                <strong class="kpi-value kpi-temp-val" id="kpi-temp">--</strong>
+                <span class="kpi-unit">°C</span>
+            </article>
+            <article class="kpi-card">
+                <span class="kpi-label">Lượng mưa</span>
+                <strong class="kpi-value kpi-rain-val" id="kpi-rain">--</strong>
+                <span class="kpi-unit">mm</span>
+            </article>
+            <article class="kpi-card">
+                <span class="kpi-label">Tốc độ gió</span>
+                <strong class="kpi-value kpi-wind-val" id="kpi-wind">--</strong>
+                <span class="kpi-unit">kph</span>
+            </article>
+            <article class="kpi-card">
+                <span class="kpi-label">Độ ẩm</span>
+                <strong class="kpi-value kpi-humidity-val" id="kpi-humidity">--</strong>
+                <span class="kpi-unit">%</span>
+            </article>
+            <article class="kpi-card">
+                <span class="kpi-label">Chỉ số UV</span>
+                <strong class="kpi-value kpi-uv-val" id="kpi-uv">--</strong>
+                <span class="kpi-unit">index</span>
+            </article>
+        </div>
+    </section>
+
     <main class="dashboard-grid">
-        <div class="left-panel">
-            <section class="card map-card">
-                <h2>Bản đồ thời tiết (Task 4, 6)</h2>
-                <div id="map-tooltip" class="tooltip"></div>
-                <svg id="vietnam-map" width="100%" height="500"></svg>
-            </section>
-
-            <section class="card detail-card">
-                <h2>Chi tiết khu vực: <span id="detail-province">Chưa chọn</span></h2>
-                <div class="detail-grid">
-                    <div class="detail-item"><span class="label">Nhiệt độ:</span> <span id="detail-temp">--</span> °C</div>
-                    <div class="detail-item"><span class="label">Lượng mưa:</span> <span id="detail-rain">--</span> mm</div>
-                    <div class="detail-item"><span class="label">Tốc độ gió:</span> <span id="detail-wind">--</span> kph</div>
-                    <div class="detail-item"><span class="label">Độ ẩm:</span> <span id="detail-humidity">--</span> %</div>
-                    <div class="detail-item"><span class="label">Chỉ số UV:</span> <span id="detail-uv">--</span></div>
-                    <div class="detail-item"><span class="label">Trạng thái:</span> <span id="detail-condition">--</span></div>
+        <section class="dashboard-row dashboard-row-1">
+            <section id="map-container" class="card dashboard-section map-section">
+                <div class="section-header">
+                    <h2>Bản đồ thời tiết</h2>
+                    <span class="section-meta">Task 4 + 6</span>
                 </div>
-            </section>
-        </div>
-
-        <div class="right-panel">
-            <section class="card">
-                <h2>Task 1: Phân bố nhiệt độ theo thời gian</h2>
-                <div id="chart-task1" class="chart-wrapper" style="width: 100%; height: 250px;"></div>
-            </section>
-
-            <section class="card">
-                <h2>Task 3: Mini Dashboard Vùng</h2>
-                <div id="dashboard-detail"></div>
-            </section>
-            
-            <section class="card">
-                <h2>Task 2: So sánh nhiệt độ giữa các vùng</h2>
-                <svg id="chart-task2" width="100%" height="250"></svg>
-            </section>
-            
-            <section class="card">
-                <h2>Task 5 & 8: So sánh Địa hình & Trạng thái</h2>
-                <div style="display: flex; gap: 10px;">
-                    <div id="chart-task5" class="chart-wrapper" style="width: 50%; height: 250px;"></div>
-                    <svg id="chart-task8" width="50%" height="250"></svg>
+                <div class="chart-shell map-shell">
+                    <div id="map-tooltip" class="tooltip"></div>
+                    <svg id="vietnam-map" width="100%" height="500"></svg>
                 </div>
             </section>
 
-            <section class="card">
-                <h2>Task 7 & 9: Tần suất trạng thái thời tiết</h2>
-                <div style="display: flex; gap: 10px;">
-                    <div id="chart-task7" style="width: 50%; height: 250px;"></div>
-                    <div id="pie-task9" style="width: 25%; height: 250px;"></div>
-                    <div id="bar-task9" style="width: 25%; height: 250px;"></div>
+            <section id="timeline-container" class="card dashboard-section timeline-section">
+                <div class="section-header">
+                    <h2>Timeline nhiệt độ</h2>
+                    <span class="section-meta">Task 1 + 11</span>
+                </div>
+                <div class="timeline-grid">
+                    <div class="chart-tile">
+                        <h3>Task 1: Phân bố nhiệt độ theo thời gian</h3>
+                        <div id="chart-task1" class="chart-wrapper chart-panel"></div>
+                    </div>
+                    <div class="chart-tile">
+                        <h3>Task 11: Đường xu hướng theo thời gian</h3>
+                        <svg id="chart-task11" width="100%" height="250"></svg>
+                    </div>
+                </div>
+            </section>
+        </section>
+
+        <section class="dashboard-row dashboard-row-2">
+            <section id="task2-5-container" class="card dashboard-section">
+                <div class="section-header">
+                    <h2>So sánh nhiệt độ</h2>
+                    <span class="section-meta">Task 2 + 5</span>
+                </div>
+                <div class="sub-grid-2-cols compact-grid">
+                    <div class="chart-tile">
+                        <h3>Task 2: Nhiệt độ giữa các vùng</h3>
+                        <svg id="chart-task2" width="100%" height="250"></svg>
+                    </div>
+                    <div class="chart-tile">
+                        <h3>Task 5: Địa hình</h3>
+                        <div id="chart-task5" class="chart-wrapper chart-panel"></div>
+                    </div>
                 </div>
             </section>
 
-            <section class="card">
-                <h2>Task 10, 11, 12: UV & Độ dài ban ngày</h2>
-                <div style="display: flex; gap: 10px;">
-                    <svg id="chart-task10" width="33%" height="200"></svg>
-                    <svg id="chart-task11" width="33%" height="200"></svg>
-                    <svg id="chart-task12" width="33%" height="200"></svg>
+            <section id="task7-9-container" class="card dashboard-section">
+                <div class="section-header">
+                    <h2>Tần suất trạng thái</h2>
+                    <span class="section-meta">Task 7 + 9</span>
+                </div>
+                <div class="task7-9-grid">
+                    <div class="chart-tile span-2-cols">
+                        <h3>Task 7: Tần suất trạng thái thời tiết</h3>
+                        <div id="chart-task7" class="chart-wrapper chart-panel"></div>
+                    </div>
+                    <div class="chart-tile">
+                        <h3>Task 9: Tỷ trọng 3 miền</h3>
+                        <div id="pie-task9" class="chart-panel"></div>
+                    </div>
+                    <div class="chart-tile">
+                        <h3>Task 9: Trạng thái theo miền</h3>
+                        <div id="bar-task9" class="chart-panel"></div>
+                    </div>
                 </div>
             </section>
-        </div>
+
+            <section id="task8-container" class="card dashboard-section">
+                <div class="section-header">
+                    <h2>Task 8: Trạng thái thời tiết</h2>
+                    <span class="section-meta">So sánh nhiệt độ theo condition</span>
+                </div>
+                <div id="chart-task8" class="chart-panel chart-panel-large"></div>
+            </section>
+        </section>
+
+        <section class="dashboard-row dashboard-row-3">
+            <section id="scatter-container" class="card dashboard-section">
+                <div class="section-header">
+                    <h2>UV và độ dài ban ngày</h2>
+                    <span class="section-meta">Task 10 + 12</span>
+                </div>
+                <div class="scatter-grid">
+                    <div class="chart-tile">
+                        <h3>Task 10: Nhiệt độ và UV</h3>
+                        <svg id="chart-task10" width="100%" height="230"></svg>
+                    </div>
+                    <div class="chart-tile">
+                        <h3>Task 12: Độ dài ban ngày và UV</h3>
+                        <svg id="chart-task12" width="100%" height="230"></svg>
+                    </div>
+                </div>
+            </section>
+        </section>
+
     </main>
 
     <script src="js/main.js"></script>
