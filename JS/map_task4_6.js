@@ -18,8 +18,13 @@ const mapState = {
 };
 
 document.addEventListener('dataChanged', function (event) {
-  const records = event.detail && Array.isArray(event.detail.data) ? event.detail.data : [];
+  const records = event.detail && Array.isArray(event.detail.mapData)
+    ? event.detail.mapData
+    : (event.detail && Array.isArray(event.detail.data) ? event.detail.data : []);
   mapState.currentRecords = records;
+  if (event.detail && event.detail.filterType !== 'province') {
+    mapState.selectedProvince = null;
+  }
   if (mapState.geo) {
     renderMap(records);
   } else {
@@ -120,6 +125,71 @@ function renderMap(records) {
     .classed('active', d => mapState.selectedProvince && getProvinceName(d) === mapState.selectedProvince);
 
   applyProvinceVisualState();
+
+  mapState.svg.selectAll('.map-legend').remove();
+
+  const legendX = mapState.width - 90;
+  const legendY = 16;
+  const legendWidth = 12;
+  const legendHeight = 80;
+
+  const defs = mapState.svg.select('defs').empty()
+    ? mapState.svg.append('defs')
+    : mapState.svg.select('defs');
+
+  const gradient = defs.selectAll('#legend-gradient').data([null]);
+  const gradientEnter = gradient.enter()
+    .append('linearGradient')
+    .attr('id', 'legend-gradient')
+    .attr('x1', '0%')
+    .attr('x2', '0%')
+    .attr('y1', '100%')
+    .attr('y2', '0%');
+
+  gradientEnter.merge(gradient)
+    .selectAll('stop')
+    .data([
+      { offset: '0%', color: d3.interpolateYlOrRd(0) },
+      { offset: '100%', color: d3.interpolateYlOrRd(1) }
+    ])
+    .join('stop')
+    .attr('offset', d => d.offset)
+    .attr('stop-color', d => d.color);
+
+  const legendGroup = mapState.svg.append('g')
+    .attr('class', 'map-legend')
+    .attr('transform', `translate(${legendX}, ${legendY})`);
+
+  legendGroup.append('text')
+    .attr('x', 0)
+    .attr('y', 0)
+    .attr('font-size', '12px')
+    .attr('font-weight', '600')
+    .text('Nhiệt độ TB (°C)');
+
+  legendGroup.append('rect')
+    .attr('x', 0)
+    .attr('y', 18)
+    .attr('width', legendWidth)
+    .attr('height', legendHeight)
+    .attr('fill', 'url(#legend-gradient)')
+    .attr('stroke', '#94a3b8')
+    .attr('stroke-width', 0.5);
+
+  legendGroup.append('text')
+    .attr('x', legendWidth + 6)
+    .attr('y', 18 + legendHeight)
+    .attr('dy', '0.3em')
+    .attr('font-size', '11px')
+    .text(minTemp.toFixed(1));
+
+  legendGroup.append('text')
+    .attr('x', legendWidth + 6)
+    .attr('y', 18)
+    .attr('dy', '0.35em')
+    .attr('font-size', '11px')
+    .text(maxTemp.toFixed(1));
+
   renderStationDots(safeRecords);
 }
 
@@ -209,9 +279,11 @@ function handleProvinceMouseOver(event, feature) {
 }
 
 function handleProvinceMouseMove(event) {
+  const x = event.clientX + 8;
+  const y = event.clientY + 8;
   mapState.tooltip
-    .style('left', `${event.pageX + 12}px`)
-    .style('top', `${event.pageY + 12}px`);
+    .style('left', `${x}px`)
+    .style('top', `${y}px`);
 }
 
 function handleProvinceMouseOut(event, feature) {
@@ -220,10 +292,36 @@ function handleProvinceMouseOut(event, feature) {
 }
 
 function handleProvinceClick(event, feature) {
-  const provinceName = getProvinceName(feature);
-  mapState.selectedProvince = mapState.selectedProvince === provinceName ? null : provinceName;
+  const provinceDisplayName = feature?.properties?.Name || feature?.properties?.Name_1 || feature?.properties?.NAME || 'Không rõ';
+  const provinceName = normalizeName(provinceDisplayName);
+  const isSameClick = mapState.selectedProvince === provinceName;
+  mapState.selectedProvince = isSameClick ? null : provinceName;
 
-  console.log('Clicked:', feature?.properties?.Name || feature?.properties?.Name_1 || feature?.properties?.NAME || 'Không rõ');
+  const selectedRegionKey = Object.keys(window.globalWeatherData || {}).find(region => {
+    const records = window.globalWeatherData[region];
+    return Array.isArray(records) && records.some(record => normalizeName(record.province) === provinceName);
+  });
+
+  if (selectedRegionKey) {
+    const regionSelect = document.getElementById('regionSelect');
+    if (regionSelect) {
+      const matchingOption = Array.from(regionSelect.options).find(option => option.value === selectedRegionKey || option.text === selectedRegionKey);
+      regionSelect.value = matchingOption ? matchingOption.value : selectedRegionKey;
+    }
+
+    const dispatcher = window.dispatchDataUpdate || (typeof dispatchDataUpdate === 'function' ? dispatchDataUpdate : null);
+    if (dispatcher) {
+      if (isSameClick) {
+        dispatcher(selectedRegionKey);
+      } else {
+        dispatcher(selectedRegionKey, provinceDisplayName);
+      }
+    } else {
+      console.warn('dispatchDataUpdate is not available on window.');
+    }
+  }
+
+  console.log('Clicked:', provinceDisplayName);
 
   mapState.provinceLayer
     .selectAll('path')

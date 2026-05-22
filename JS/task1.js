@@ -267,8 +267,8 @@ function updateLineChart(records) {
             })
             .on("mousemove", function (event) {
                 task1State.tooltip
-                    .style("left", `${event.pageX + 14}px`)
-                    .style("top", `${event.pageY + 14}px`);
+                    .style("left", `${event.clientX + 10}px`)
+                    .style("top", `${event.clientY + 10}px`);
             })
             .on("mouseleave", function () {
                 task1State.tooltip.style("opacity", 0);
@@ -281,8 +281,8 @@ function updateLineChart(records) {
             })
             .on("mousemove", function (event) {
                 task1State.tooltip
-                    .style("left", `${event.pageX + 14}px`)
-                    .style("top", `${event.pageY + 14}px`);
+                    .style("left", `${event.clientX + 10}px`)
+                    .style("top", `${event.clientY + 10}px`);
             })
             .on("mouseleave", function () {
                 task1State.tooltip.style("opacity", 0);

@@ -61,8 +61,8 @@ function bindBarEvents(selection) {
                    .html(`<strong>${d.condition}</strong><br>Số ngày: ${d.count}`);
         })
         .on("mousemove", function (event) {
-            tooltip7.style("left", event.pageX + 12 + "px")
-                   .style("top", event.pageY - 28 + "px");
+             tooltip7.style("left", event.clientX + 8 + "px")
+                 .style("top", event.clientY - 18 + "px");
         })
         .on("mouseout", function () {
             if (!d3.select(this).classed("selected")) {

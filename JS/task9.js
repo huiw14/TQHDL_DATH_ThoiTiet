@@ -252,9 +252,9 @@ function updateBarChartTask9(records, regionName) {
                 ));
         })
         .on("mousemove", function(event) {
-            // Cho tooltip chạy theo con trỏ chuột
-            task9Tooltip.style("left", (event.pageX + 15) + "px")
-                   .style("top", (event.pageY - 30) + "px");
+             // Cho tooltip chạy theo con trỏ chuột
+             tooltip.style("left", (event.clientX + 10) + "px")
+                 .style("top", (event.clientY - 20) + "px");
         })
         .on("mouseout", function() {
             // Rời chuột thì trả về màu gốc và giấu tooltip
