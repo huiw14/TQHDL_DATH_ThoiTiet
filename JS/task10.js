@@ -24,14 +24,15 @@ const task10State = {
 };
 
 function ensureTask10Tooltip() {
-    let tooltip = d3.select('#task10-tooltip');
-    if (tooltip.empty()) {
-        tooltip = d3.select('body').append('div')
-            .attr('id', 'task10-tooltip')
-            .attr('class', 'tooltip')
-            .style('display', 'none');
+    const existingTooltip = d3.select('body').select('#task10-tooltip');
+    if (!existingTooltip.empty()) {
+        return existingTooltip;
     }
-    return tooltip;
+
+    return d3.select('body').append('div')
+        .attr('id', 'task10-tooltip')
+        .attr('class', 'tooltip')
+        .style('display', 'none');
 }
 
 function ensureTask10Chart() {
@@ -171,8 +172,8 @@ function updateScatterChart(records) {
             .attr('cx', d => task10State.xScale(d.temp))
             .attr('cy', d => task10State.yScale(d.uv))
             .attr('r', 0)
-            .attr('fill', '#f59e0b')
-            .attr('stroke', '#f59e0b')
+            .attr('fill', 'var(--chart-amber)')
+            .attr('stroke', 'var(--chart-amber)')
             .attr('stroke-width', 1)
             .attr('opacity', 0.6)
             .call(enter => enter.transition().duration(750).attr('r', 5))
@@ -187,8 +188,8 @@ function updateScatterChart(records) {
                 .attr('cx', d => task10State.xScale(d.temp))
                 .attr('cy', d => task10State.yScale(d.uv))
                 .attr('r', 5)
-                .attr('fill', '#f59e0b')
-                .attr('stroke', '#f59e0b')
+                .attr('fill', 'var(--chart-amber)')
+                .attr('stroke', 'var(--chart-amber)')
                 .attr('stroke-width', 1)
                 .attr('opacity', 0.6)),
         exit => exit.transition().duration(300).attr('r', 0).remove()
@@ -203,7 +204,7 @@ function handleTask10MouseEnter(event, d) {
         .transition()
         .duration(180)
         .attr('r', 8)
-        .attr('stroke', '#1e293b')
+        .attr('stroke', 'var(--text-main)')
         .attr('stroke-width', 1.5)
         .attr('opacity', 1);
 
@@ -224,7 +225,7 @@ function handleTask10MouseLeave(event, d) {
         .transition()
         .duration(180)
         .attr('r', 5)
-        .attr('stroke', '#f59e0b')
+        .attr('stroke', 'var(--chart-amber)')
         .attr('stroke-width', 1)
         .attr('opacity', 0.6);
 
@@ -252,8 +253,8 @@ function applyTask10BrushSelection(selection) {
     if (!selection) {
         points.transition().duration(200)
             .attr('opacity', 0.6)
-            .attr('fill', '#f59e0b')
-            .attr('stroke', '#f59e0b');
+            .attr('fill', 'var(--chart-amber)')
+            .attr('stroke', 'var(--chart-amber)');
         return;
     }
 
@@ -270,13 +271,13 @@ function applyTask10BrushSelection(selection) {
             const cx = task10State.xScale(d.temp);
             const cy = task10State.yScale(d.uv);
             const inside = cx >= x0 && cx <= x1 && cy >= y0 && cy <= y1;
-            return inside ? '#f59e0b' : '#e2e8f0';
+            return inside ? 'var(--chart-amber)' : 'var(--border-color)';
         })
         .attr('stroke', d => {
             const cx = task10State.xScale(d.temp);
             const cy = task10State.yScale(d.uv);
             const inside = cx >= x0 && cx <= x1 && cy >= y0 && cy <= y1;
-            return inside ? '#f59e0b' : '#e2e8f0';
+            return inside ? 'var(--chart-amber)' : 'var(--border-color)';
         });
 }
 

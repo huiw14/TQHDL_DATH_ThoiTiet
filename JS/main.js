@@ -5,7 +5,7 @@ const kpiFormatters = {
     temp: d3.format('.1f'),
     rain: d3.format('.1f'),
     wind: d3.format('.1f'),
-    humidity: d3.format('.1f'),
+    humidity: d3.format('d'),
     uv: d3.format('.1f')
 };
 
@@ -35,16 +35,25 @@ d3.json("Data/weather_dataset.json").then(function (data) {
 
 }).catch(error => {
     console.error("Lỗi tải dữ liệu JSON:", error);
+    const select = d3.select("#regionSelect");
+    select.text("Lỗi tải dữ liệu");
+    select.property("disabled", true);
 });
 
 // Hàm điều phối chung (Gọi các hàm update của từng Task)
 function dispatchDataUpdate(regionName) {
     const regionData = window.globalWeatherData[regionName];
 
+    document.body.classList.add('is-updating');
+
     // Bắn một Custom Event để báo cho các file js/task*.js biết đã có data mới
     // Anh em team chỉ cần dán đoạn lắng nghe sự kiện này vào file của họ
     const event = new CustomEvent("dataChanged", { detail: { region: regionName, data: regionData } });
     document.dispatchEvent(event);
+
+    setTimeout(() => {
+        document.body.classList.remove('is-updating');
+    }, 350);
 }
 
 // ==========================================

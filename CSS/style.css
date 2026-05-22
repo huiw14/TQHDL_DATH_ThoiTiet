@@ -733,6 +733,7 @@ body {
 
 .dashboard-row-1 {
     grid-template-columns: 4fr 8fr;
+    align-items: stretch;
 }
 
 .dashboard-row-2 {
@@ -912,8 +913,8 @@ body {
 
 #vietnam-map {
     width: 100%;
-    height: auto;
-    min-height: 500px;
+    height: 100%;
+    min-height: 340px;
 }
 
 @media (max-width: 1200px) {

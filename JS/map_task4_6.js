@@ -252,15 +252,15 @@ function applyProvinceVisualState() {
 }
 
 function ensureMapTooltip() {
-  let tooltip = d3.select('#map-tooltip');
-  if (tooltip.empty()) {
-    tooltip = d3.select('body')
-      .append('div')
-      .attr('id', 'map-tooltip')
-      .attr('class', 'tooltip');
+  const existingTooltip = d3.select('body').select('#map-tooltip');
+  if (!existingTooltip.empty()) {
+    return existingTooltip;
   }
 
-  return tooltip;
+  return d3.select('body')
+    .append('div')
+    .attr('id', 'map-tooltip')
+    .attr('class', 'tooltip');
 }
 
 function normalizeName(s) {

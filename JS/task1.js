@@ -37,14 +37,15 @@ function debounce(fn, wait = 120) {
 }
 
 function createTask1Tooltip() {
-    let tooltip = d3.select(`#${task1TooltipId}`);
-    if (tooltip.empty()) {
-        tooltip = d3.select("body")
-            .append("div")
-            .attr("id", task1TooltipId)
-            .attr("class", "tooltip");
+    const existingTooltip = d3.select("body").select(`#${task1TooltipId}`);
+    if (!existingTooltip.empty()) {
+        return existingTooltip;
     }
-    return tooltip;
+
+    return d3.select("body")
+        .append("div")
+        .attr("id", task1TooltipId)
+        .attr("class", "tooltip");
 }
 
 function ensureTask1Chart() {
@@ -75,12 +76,12 @@ function ensureTask1Chart() {
 
     task1State.gradient.append("stop")
         .attr("offset", "0%")
-        .attr("stop-color", "#38bdf8")
+        .attr("stop-color", "var(--chart-amber)")
         .attr("stop-opacity", 0.38);
 
     task1State.gradient.append("stop")
         .attr("offset", "100%")
-        .attr("stop-color", "#38bdf8")
+        .attr("stop-color", "#f59e0b")
         .attr("stop-opacity", 0);
 
     task1State.root = task1State.svg.append("g")
@@ -95,7 +96,7 @@ function ensureTask1Chart() {
     task1State.linePath = task1State.root.append("path")
         .attr("class", "line")
         .attr("fill", "none")
-        .attr("stroke", "#2563eb")
+        .attr("stroke", "var(--chart-amber)")
         .attr("stroke-width", 3)
         .attr("stroke-linecap", "round")
         .attr("stroke-linejoin", "round");
@@ -215,11 +216,11 @@ function updateLineChart(records) {
         .duration(750)
         .call(d3.axisBottom(x)
             .ticks(5)
-            .tickFormat(d3.timeFormat("%d-%m-%Y")))
+            .tickFormat(d3.timeFormat("%d/%m")))
         .selection()
         .selectAll("text")
-        .attr("transform", "translate(0,6)")
-        .style("text-anchor", "middle");
+        .attr("transform", "rotate(-45)")
+        .style("text-anchor", "end");
 
     task1State.yAxisGroup
         .transition()
