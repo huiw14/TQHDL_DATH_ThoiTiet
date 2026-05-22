@@ -3,7 +3,7 @@
 const task1Container = d3.select("#chart-task1");
 const task1TooltipId = "task1-tooltip";
 const task1Margin = { top: 28, right: 22, bottom: 40, left: 52 };
-const task1OuterHeight = 340;
+const task1OuterHeight = 400;
 
 const task1State = {
     svg: null,
@@ -220,7 +220,9 @@ function updateLineChart(records) {
         .selection()
         .selectAll("text")
         .attr("transform", "rotate(-45)")
-        .style("text-anchor", "end");
+        .style("text-anchor", "end")
+        .attr("dx", "-.8em")
+        .attr("dy", ".15em");
 
     task1State.yAxisGroup
         .transition()
