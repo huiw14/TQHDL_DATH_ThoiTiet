@@ -13,6 +13,7 @@ async function loadAndRenderChart() {
     // 3. Ánh xạ các vùng địa lý sang các vùng chính (Bắc, Trung, Nam)
     const regionMapping = {
       'Đồng Bằng Sông Hồng': 'Bắc',                                    // North
+      'Trung du và miền núi phía Bắc': 'Bắc',                          // North
       'Trung du và miền núi Bắc Bộ': 'Bắc',                            // North
       'Bắc Trung Bộ và Duyên hải miền Trung': 'Trung',                // Central
       'Tây Nguyên': 'Trung',                                            // Central
