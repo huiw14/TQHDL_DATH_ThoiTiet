@@ -1,18 +1,32 @@
-// File js/task1.js
+// Task 1: Biểu đồ xu hướng nhiệt độ
 
-const chart1Container = d3.select("#chart-task1");
-const chart1TooltipId = "task1-tooltip";
+const task1Container = d3.select("#chart-task1");
+const task1TooltipId = "task1-tooltip";
+const task1Margin = { top: 28, right: 22, bottom: 40, left: 52 };
+const task1OuterHeight = 340;
 
-function createTask1Tooltip() {
-    let tooltip = d3.select(`#${chart1TooltipId}`);
-    if (tooltip.empty()) {
-        tooltip = d3.select("body")
-            .append("div")
-            .attr("id", chart1TooltipId)
-            .attr("class", "tooltip");
-    }
-    return tooltip;
-}
+const task1State = {
+    svg: null,
+    root: null,
+    defs: null,
+    gradient: null,
+    gridGroup: null,
+    xAxisGroup: null,
+    yAxisGroup: null,
+    linePath: null,
+    areaPath: null,
+    pointLayer: null,
+    width: 0,
+    height: 0,
+    innerWidth: 0,
+    innerHeight: 0,
+    xScale: d3.scaleTime(),
+    yScale: d3.scaleLinear(),
+    lineGenerator: d3.line().curve(d3.curveMonotoneX),
+    areaGenerator: d3.area().curve(d3.curveMonotoneX),
+    tooltip: null,
+    currentData: []
+};
 
 function debounce(fn, wait = 120) {
     let timeout;
@@ -22,185 +36,279 @@ function debounce(fn, wait = 120) {
     };
 }
 
-function renderTask1() {
-    chart1Container.selectAll("*").remove();
-    d3.json("Data/weather_dataset.json").then(rawData => {
-        const records = Object.values(rawData).flat();
-        if (!records.length) {
-            chart1Container.append("p")
-                .text("Không có dữ liệu để hiển thị Task 1")
-                .style("color", "#334155");
-            return;
+function createTask1Tooltip() {
+    let tooltip = d3.select(`#${task1TooltipId}`);
+    if (tooltip.empty()) {
+        tooltip = d3.select("body")
+            .append("div")
+            .attr("id", task1TooltipId)
+            .attr("class", "tooltip");
+    }
+    return tooltip;
+}
+
+function ensureTask1Chart() {
+    if (task1State.svg) return;
+
+    const containerNode = task1Container.node();
+    if (!containerNode) return;
+
+    task1State.width = containerNode.clientWidth || 760;
+    task1State.height = task1OuterHeight;
+    task1State.innerWidth = task1State.width - task1Margin.left - task1Margin.right;
+    task1State.innerHeight = task1State.height - task1Margin.top - task1Margin.bottom;
+
+    task1State.svg = task1Container.append("svg")
+        .attr("class", "chart-svg")
+        .attr("width", "100%")
+        .attr("height", "100%")
+        .attr("viewBox", `0 0 ${task1State.width} ${task1State.height}`)
+        .attr("preserveAspectRatio", "xMidYMid meet");
+
+    task1State.defs = task1State.svg.append("defs");
+    task1State.gradient = task1State.defs.append("linearGradient")
+        .attr("id", "task1-gradient")
+        .attr("x1", "0%")
+        .attr("x2", "0%")
+        .attr("y1", "0%")
+        .attr("y2", "100%");
+
+    task1State.gradient.append("stop")
+        .attr("offset", "0%")
+        .attr("stop-color", "#38bdf8")
+        .attr("stop-opacity", 0.38);
+
+    task1State.gradient.append("stop")
+        .attr("offset", "100%")
+        .attr("stop-color", "#38bdf8")
+        .attr("stop-opacity", 0);
+
+    task1State.root = task1State.svg.append("g")
+        .attr("transform", `translate(${task1Margin.left},${task1Margin.top})`);
+
+    task1State.gridGroup = task1State.root.append("g").attr("class", "grid");
+    task1State.areaPath = task1State.root.append("path")
+        .attr("class", "area")
+        .attr("fill", "url(#task1-gradient)")
+        .attr("opacity", 0.95);
+
+    task1State.linePath = task1State.root.append("path")
+        .attr("class", "line")
+        .attr("fill", "none")
+        .attr("stroke", "#2563eb")
+        .attr("stroke-width", 3)
+        .attr("stroke-linecap", "round")
+        .attr("stroke-linejoin", "round");
+
+    task1State.pointLayer = task1State.root.append("g").attr("class", "point-layer");
+    task1State.xAxisGroup = task1State.root.append("g")
+        .attr("class", "axis x-axis")
+        .attr("transform", `translate(0, ${task1State.innerHeight})`);
+    task1State.yAxisGroup = task1State.root.append("g")
+        .attr("class", "axis y-axis");
+
+    task1State.root.append("text")
+        .attr("class", "axis-label")
+        .attr("x", task1State.innerWidth / 2)
+        .attr("y", task1State.innerHeight + 34)
+        .attr("text-anchor", "middle")
+        .text("Ngày");
+
+    task1State.root.append("text")
+        .attr("class", "axis-label")
+        .attr("transform", `translate(-42, ${task1State.innerHeight / 2}) rotate(-90)`)
+        .attr("text-anchor", "middle")
+        .text("Nhiệt độ (°C)");
+
+    task1State.tooltip = createTask1Tooltip();
+}
+
+function getDailyAverageData(records) {
+    const parseDate = d3.timeParse("%Y-%m-%d");
+    const parseFallback = d3.timeParse("%d/%m/%Y");
+
+    const source = Array.isArray(records) ? records : [];
+    const grouped = d3.rollups(
+        source.filter(d => d && Number.isFinite(+d.temp)),
+        values => d3.mean(values, d => +d.temp),
+        d => {
+            const rawTime = d?.time || d?.date || "";
+            const parsed = parseDate(rawTime) || parseFallback(rawTime);
+            return parsed ? d3.timeFormat("%Y-%m-%d")(parsed) : String(rawTime).trim();
         }
+    );
 
-        const parseDate = d3.timeParse("%Y-%m-%d");
-        const data = Array.from(
-            d3.rollups(
-                records,
-                values => d3.mean(values, d => d.temp),
-                d => d.date
-            ),
-            ([date, avgTemp]) => ({
-                date: parseDate(date),
-                avgTemp
-            })
-        )
-            .filter(d => d.date)
-            .sort((a, b) => d3.ascending(a.date, b.date));
+    return grouped
+        .map(([dayKey, avgTemp]) => ({
+            day: task1ParseDayKey(dayKey),
+            avgTemp
+        }))
+        .filter(d => d.day && Number.isFinite(d.avgTemp))
+        .sort((a, b) => d3.ascending(a.day, b.day));
+}
 
-        const margin = { top: 28, right: 22, bottom: 40, left: 52 };
-        const width = chart1Container.node().clientWidth || 760;
-        const height = 340;
-        const innerWidth = width - margin.left - margin.right;
-        const innerHeight = height - margin.top - margin.bottom;
+function task1ParseDayKey(dayKey) {
+    const parseDate = d3.timeParse("%Y-%m-%d");
+    const parseFallback = d3.timeParse("%d/%m/%Y");
+    return parseDate(dayKey) || parseFallback(dayKey) || null;
+}
 
-        // FIX TRÀN KHUNG: Dùng viewBox để tự động co giãn
-        const svg = chart1Container.append("svg")
-            .attr("class", "chart-svg")
-            .attr("width", "100%")
-            .attr("height", "100%")
-            .attr("viewBox", `0 0 ${width} ${height}`)
-            .attr("preserveAspectRatio", "xMidYMid meet");
+function updateLineChart(records) {
+    ensureTask1Chart();
 
-        const defs = svg.append("defs");
-        const gradient = defs.append("linearGradient")
-            .attr("id", "task1-gradient")
-            .attr("x1", "0%")
-            .attr("x2", "0%")
-            .attr("y1", "0%")
-            .attr("y2", "100%");
+    if (Array.isArray(records)) {
+        task1State.currentData = records;
+    }
 
-        gradient.append("stop")
-            .attr("offset", "0%")
-            .attr("stop-color", "#38bdf8")
-            .attr("stop-opacity", 0.38);
+    const recordsToRender = task1State.currentData.length ? task1State.currentData : [];
+    const dailyData = getDailyAverageData(recordsToRender);
 
-        gradient.append("stop")
-            .attr("offset", "100%")
-            .attr("stop-color", "#38bdf8")
-            .attr("stop-opacity", 0);
+    if (!dailyData.length) {
+        task1State.gridGroup.selectAll("*").remove();
+        task1State.xAxisGroup.selectAll("*").remove();
+        task1State.yAxisGroup.selectAll("*").remove();
+        task1State.linePath.datum([]).attr("d", null);
+        task1State.areaPath.datum([]).attr("d", null);
+        task1State.pointLayer.selectAll("circle").remove();
+        task1State.root.selectAll("text.empty-state").data([null]).join("text")
+            .attr("class", "empty-state")
+            .attr("x", task1State.innerWidth / 2)
+            .attr("y", task1State.innerHeight / 2)
+            .attr("text-anchor", "middle")
+            .attr("fill", "#64748b")
+            .text("Không có dữ liệu để hiển thị Task 1");
+        return;
+    }
 
-        const chart = svg.append("g")
-            .attr("transform", `translate(${margin.left},${margin.top})`);
+    task1State.root.selectAll("text.empty-state").remove();
 
-        const xScale = d3.scaleTime()
-            .domain(d3.extent(data, d => d.date))
-            .range([0, innerWidth]);
+    const x = task1State.xScale
+        .domain(d3.extent(dailyData, d => d.day))
+        .range([0, task1State.innerWidth]);
 
-        const yScale = d3.scaleLinear()
-            .domain([d3.min(data, d => d.avgTemp) - 1, d3.max(data, d => d.avgTemp) + 1])
-            .nice()
-            .range([innerHeight, 0]);
+    const minY = d3.min(dailyData, d => d.avgTemp) ?? 0;
+    const maxY = d3.max(dailyData, d => d.avgTemp) ?? 0;
+    const y = task1State.yScale
+        .domain([minY - 2, maxY + 2])
+        .nice()
+        .range([task1State.innerHeight, 0]);
 
-        chart.append("g")
-            .attr("class", "grid")
-            .call(d3.axisLeft(yScale)
-                .ticks(5)
-                .tickSize(-innerWidth)
-                .tickFormat(""))
-            .selectAll("line")
-            .attr("stroke-opacity", 0.18);
+    const line = task1State.lineGenerator
+        .x(d => x(d.day))
+        .y(d => y(d.avgTemp));
 
-        const xAxis = d3.axisBottom(xScale)
+    const area = task1State.areaGenerator
+        .x(d => x(d.day))
+        .y0(task1State.innerHeight)
+        .y1(d => y(d.avgTemp));
+
+    task1State.gridGroup
+        .transition()
+        .duration(750)
+        .call(d3.axisLeft(y)
             .ticks(5)
-            .tickFormat(d3.timeFormat("%d-%m-%Y"));
+            .tickSize(-task1State.innerWidth)
+            .tickFormat(""));
 
-        const yAxis = d3.axisLeft(yScale)
+    task1State.xAxisGroup
+        .transition()
+        .duration(750)
+        .call(d3.axisBottom(x)
             .ticks(5)
-            .tickSize(-6)
-            .tickPadding(10);
+            .tickFormat(d3.timeFormat("%d-%m-%Y")))
+        .selection()
+        .selectAll("text")
+        .attr("transform", "translate(0,6)")
+        .style("text-anchor", "middle");
 
-        chart.append("g")
-            .attr("transform", `translate(0, ${innerHeight})`)
-            .attr("class", "axis")
-            .call(xAxis)
-            .selectAll("text")
-            .attr("transform", "translate(0,6)")
-            .style("text-anchor", "middle");
+    task1State.yAxisGroup
+        .transition()
+        .duration(750)
+        .call(d3.axisLeft(y).ticks(5).tickSize(-6).tickPadding(10));
 
-        chart.append("g")
-            .attr("class", "axis")
-            .call(yAxis)
-            .selectAll("text")
-            .style("font-size", "12px");
+    task1State.areaPath
+        .datum(dailyData)
+        .transition()
+        .duration(750)
+        .attr("d", area);
 
-        const area = d3.area()
-            .curve(d3.curveMonotoneX)
-            .x(d => xScale(d.date))
-            .y0(innerHeight)
-            .y1(d => yScale(d.avgTemp));
+    const lineSelection = task1State.linePath.datum(dailyData);
+    const previousPath = task1State.linePath.attr("d");
+    if (!previousPath) {
+        task1State.linePath.attr("d", line).attr("opacity", 0);
+    }
 
-        chart.append("path")
-            .datum(data)
-            .attr("d", area)
-            .attr("fill", "url(#task1-gradient)")
-            .attr("opacity", 0.95);
+    lineSelection
+        .transition()
+        .duration(750)
+        .attr("opacity", 1)
+        .attr("d", line);
 
-        chart.append("path")
-            .datum(data)
-            .attr("fill", "none")
-            .attr("stroke", "#2563eb")
-            .attr("stroke-width", 3)
-            .attr("stroke-linecap", "round")
-            .attr("stroke-linejoin", "round")
-            .attr("d", d3.line()
-                .curve(d3.curveMonotoneX)
-                .x(d => xScale(d.date))
-                .y(d => yScale(d.avgTemp))
-            )
-            .attr("stroke-dasharray", function () {
-                const totalLength = this.getTotalLength();
-                return `${totalLength} ${totalLength}`;
-            })
-            .attr("stroke-dashoffset", function () {
-                return this.getTotalLength();
-            })
-            .transition()
-            .duration(1400)
-            .attr("stroke-dashoffset", 0);
+    const points = task1State.pointLayer
+        .selectAll("circle.hover-point")
+        .data(dailyData, d => d.day);
 
-        const tooltip = createTask1Tooltip();
-
-        chart.selectAll("circle.hover-point")
-            .data(data)
-            .join("circle")
+    points.join(
+        enter => enter.append("circle")
             .attr("class", "hover-point")
-            .attr("cx", d => xScale(d.date))
-            .attr("cy", d => yScale(d.avgTemp))
-            .attr("r", 8)
+            .attr("cx", d => x(d.day))
+            .attr("cy", d => y(d.avgTemp))
+            .attr("r", 0)
             .attr("fill", "transparent")
             .attr("cursor", "pointer")
+            .call(enter => enter.transition().duration(750).attr("r", 8))
             .on("mouseenter", function (event, d) {
-                tooltip.style("opacity", 1)
-                    .html(`Ngày: <strong>${d3.timeFormat("%d-%m-%Y")(d.date)}</strong><br>Nhiệt độ: <strong>${d.avgTemp.toFixed(1)}°C</strong>`);
+                task1State.tooltip
+                    .style("opacity", 1)
+                    .html(`Ngày: <strong>${d3.timeFormat("%d-%m-%Y")(d.day)}</strong><br>Nhiệt độ: <strong>${d.avgTemp.toFixed(1)}°C</strong>`);
             })
             .on("mousemove", function (event) {
-                tooltip.style("left", `${event.pageX + 14}px`)
+                task1State.tooltip
+                    .style("left", `${event.pageX + 14}px`)
                     .style("top", `${event.pageY + 14}px`);
             })
             .on("mouseleave", function () {
-                tooltip.style("opacity", 0);
-            });
-
-        chart.append("text")
-            .attr("class", "axis-label")
-            .attr("x", innerWidth / 2)
-            .attr("y", innerHeight + 34)
-            .attr("text-anchor", "middle")
-            .text("Ngày");
-
-        chart.append("text")
-            .attr("class", "axis-label")
-            .attr("transform", `translate(-42, ${innerHeight / 2}) rotate(-90)`)
-            .attr("text-anchor", "middle")
-            .text("Nhiệt độ (°C)");
-    }).catch(error => {
-        console.error("Task 1: Lỗi tải dữ liệu JSON:", error);
-        chart1Container.append("p")
-            .text("Không thể tải dữ liệu cho Task 1.")
-            .style("color", "#dc2626");
-    });
+                task1State.tooltip.style("opacity", 0);
+            }),
+        update => update
+            .on("mouseenter", function (event, d) {
+                task1State.tooltip
+                    .style("opacity", 1)
+                    .html(`Ngày: <strong>${d3.timeFormat("%d-%m-%Y")(d.day)}</strong><br>Nhiệt độ: <strong>${d.avgTemp.toFixed(1)}°C</strong>`);
+            })
+            .on("mousemove", function (event) {
+                task1State.tooltip
+                    .style("left", `${event.pageX + 14}px`)
+                    .style("top", `${event.pageY + 14}px`);
+            })
+            .on("mouseleave", function () {
+                task1State.tooltip.style("opacity", 0);
+            })
+            .call(update => update.transition().duration(750)
+                .attr("cx", d => x(d.day))
+                .attr("cy", d => y(d.avgTemp))
+                .attr("r", 8)),
+        exit => exit.transition().duration(300).attr("r", 0).remove()
+    );
 }
 
-renderTask1();
-window.addEventListener("resize", debounce(renderTask1, 180));
+document.addEventListener("dataChanged", function (event) {
+    updateLineChart(event.detail?.data || []);
+});
+
+window.addEventListener("resize", debounce(() => {
+    if (task1State.svg) {
+        task1State.svg.remove();
+        task1State.svg = null;
+        task1State.root = null;
+        task1State.defs = null;
+        task1State.gradient = null;
+        task1State.gridGroup = null;
+        task1State.xAxisGroup = null;
+        task1State.yAxisGroup = null;
+        task1State.linePath = null;
+        task1State.areaPath = null;
+        task1State.pointLayer = null;
+    }
+    updateLineChart(task1State.currentData);
+}, 180));
