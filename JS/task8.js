@@ -136,8 +136,8 @@ async function loadAndRenderTask8() {
           .html(`<strong>${escapeHtml(d.condition)}</strong><br/>Nhiệt độ: ${d.avg.toFixed(1)} °C`);
       })
       .on('mousemove', function(event) {
-        tooltip.style('left', (event.pageX + 12) + 'px')
-          .style('top', (event.pageY + 12) + 'px');
+        tooltip.style('left', (event.clientX + 8) + 'px')
+          .style('top', (event.clientY + 8) + 'px');
       })
       .on('mouseout', function() {
         // Trả về trạng thái ban đầu

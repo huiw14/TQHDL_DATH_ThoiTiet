@@ -113,8 +113,8 @@ function renderTask5() {
                     .html(`<strong>${d.group}</strong><br>Trung bình: <strong>${d.meanTemp.toFixed(1)}°C</strong><br>Số bản ghi: <strong>${d.count}</strong>`);
             })
             .on("mousemove", function (event) {
-                tooltip.style("left", `${event.pageX + 12}px`)
-                    .style("top", `${event.pageY + 14}px`);
+                tooltip.style("left", `${event.clientX + 8}px`)
+                    .style("top", `${event.clientY + 8}px`);
             })
             .on("mouseleave", function () {
                 tooltip.style("opacity", 0);

@@ -17,7 +17,6 @@ async function loadWeatherData() {
         regionsList.sort();
         
         initializeRegionList();
-        loadRegionSelect();
         
     } catch (error) {
         console.error('Lỗi tải dữ liệu:', error);

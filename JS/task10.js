@@ -216,8 +216,8 @@ function handleTask10MouseEnter(event, d) {
 
 function handleTask10MouseMove(event) {
     task10State.tooltip
-        .style('left', `${event.pageX + 12}px`)
-        .style('top', `${event.pageY - 28}px`);
+        .style('left', `${event.clientX + 8}px`)
+        .style('top', `${event.clientY - 18}px`);
 }
 
 function handleTask10MouseLeave(event, d) {
