@@ -9,21 +9,15 @@ async function loadWeatherData() {
     try {
         const response = await fetch('Data/weather_dataset.json');
         weatherData = await response.json();
-        
-        // Trích xuất danh sách vùng duy nhất
-        regionsList = Array.from(new Set(Object.keys(weatherData)));
-        
-        // Sắp xếp vùng
-        regionsList.sort();
-        
         initializeRegionList();
+        renderDetailFromCurrentSelection();
         
     } catch (error) {
         console.error('Lỗi tải dữ liệu:', error);
     }
 }
 
-// Khởi tạo danh sách vùng có thể click
+// Khởi tạo khung chi tiết vùng
 function initializeRegionList() {
     const dashboard = document.getElementById('dashboard-detail');
     if (!dashboard) {
@@ -34,12 +28,6 @@ function initializeRegionList() {
     // Tạo cấu trúc HTML cho mini dashboard
     dashboard.innerHTML = `
         <div class="mini-dashboard">
-            <div class="region-list-panel">
-                <h3>Danh sách Vùng</h3>
-                <ul class="region-list" id="regionListContainer">
-                    <!-- Sẽ được populate bằng JS -->
-                </ul>
-            </div>
             <div class="region-detail-panel">
                 <h3>Chi tiết Vùng</h3>
                 <div class="region-detail-card">
@@ -80,55 +68,6 @@ function initializeRegionList() {
             </div>
         </div>
     `;
-    
-    // Populate danh sách vùng
-    const regionListContainer = document.getElementById('regionListContainer');
-    regionsList.forEach(region => {
-        const li = document.createElement('li');
-        li.className = 'region-item';
-        li.textContent = region;
-        li.addEventListener('click', () => selectRegion(region, li));
-        regionListContainer.appendChild(li);
-    });
-}
-
-// Xử lý khi click chọn vùng
-function selectRegion(regionName, element) {
-    // Bỏ active class từ item cũ
-    document.querySelectorAll('.region-item').forEach(item => {
-        item.classList.remove('active');
-    });
-    
-    // Thêm active class cho item mới
-    element.classList.add('active');
-    
-    // Update chi tiết vùng
-    updateRegionDetail(regionName);
-}
-
-// Cập nhật chi tiết vùng
-function updateRegionDetail(regionName) {
-    if (!weatherData[regionName]) {
-        console.warn('Không tìm thấy dữ liệu cho vùng:', regionName);
-        return;
-    }
-    
-    const regionData = weatherData[regionName];
-    
-    // Tính toán thống kê
-    const stats = calculateStats(regionData);
-    
-    // Update UI
-    document.getElementById('selected-region-title').textContent = regionName;
-    document.getElementById('avg-temp').textContent = stats.avgTemp.toFixed(2) + ' °C';
-    document.getElementById('avg-rain').textContent = stats.avgRain.toFixed(2) + ' mm';
-    document.getElementById('avg-wind').textContent = stats.avgWind.toFixed(2) + ' kph';
-    document.getElementById('avg-humidity').textContent = stats.avgHumidity.toFixed(2) + ' %';
-    document.getElementById('avg-uv').textContent = stats.avgUv.toFixed(2);
-    document.getElementById('total-records').textContent = regionData.length;
-    
-    // Update danh sách trạng thái thời tiết
-    updateConditionList(stats.conditions);
 }
 
 // Tính toán thống kê
@@ -183,23 +122,38 @@ function updateConditionList(conditions) {
     });
 }
 
+function renderDetailFromCurrentSelection(records, label) {
+    const targetRecords = Array.isArray(records) && records.length
+        ? records
+        : (window.globalWeatherRecords || []);
+
+    const selectedRegionTitle = document.getElementById('selected-region-title');
+    if (selectedRegionTitle) {
+        selectedRegionTitle.textContent = label || 'Tất cả dữ liệu';
+    }
+
+    const stats = calculateStats(targetRecords);
+    const avgTemp = document.getElementById('avg-temp');
+    const avgRain = document.getElementById('avg-rain');
+    const avgWind = document.getElementById('avg-wind');
+    const avgHumidity = document.getElementById('avg-humidity');
+    const avgUv = document.getElementById('avg-uv');
+    const totalRecords = document.getElementById('total-records');
+
+    if (avgTemp) avgTemp.textContent = stats.avgTemp.toFixed(2) + ' °C';
+    if (avgRain) avgRain.textContent = stats.avgRain.toFixed(2) + ' mm';
+    if (avgWind) avgWind.textContent = stats.avgWind.toFixed(2) + ' kph';
+    if (avgHumidity) avgHumidity.textContent = stats.avgHumidity.toFixed(2) + ' %';
+    if (avgUv) avgUv.textContent = stats.avgUv.toFixed(2);
+    if (totalRecords) totalRecords.textContent = targetRecords.length;
+
+    updateConditionList(stats.conditions);
+}
+
 document.addEventListener('dataChanged', (event) => {
     const records = event.detail.data || [];
     if (!records.length || !document.getElementById('avg-temp')) return;
-
-    const selectedRegionTitle = document.getElementById('selected-region-title');
-    if (selectedRegionTitle && event.detail.filterType === 'month') {
-        selectedRegionTitle.textContent = `${event.detail.month} - Tong hop`;
-    }
-
-    const stats = calculateStats(records);
-    document.getElementById('avg-temp').textContent = stats.avgTemp.toFixed(2) + ' °C';
-    document.getElementById('avg-rain').textContent = stats.avgRain.toFixed(2) + ' mm';
-    document.getElementById('avg-wind').textContent = stats.avgWind.toFixed(2) + ' kph';
-    document.getElementById('avg-humidity').textContent = stats.avgHumidity.toFixed(2) + ' %';
-    document.getElementById('avg-uv').textContent = stats.avgUv.toFixed(2);
-    document.getElementById('total-records').textContent = records.length;
-    updateConditionList(stats.conditions);
+    renderDetailFromCurrentSelection(records, event.detail.label || 'Tất cả dữ liệu');
 });
 
 // Khởi động khi trang load

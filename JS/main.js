@@ -7,18 +7,16 @@ d3.json("Data/weather_dataset.json").then(function (data) {
     window.globalWeatherData = data;
     window.globalWeatherRecords = flattenWeatherData(data);
 
-    const select = d3.select("#globalFilterSelect");
-    buildGlobalFilterOptions(select, data);
+    const regionSelect = d3.select("#globalFilterSelect");
+    const monthSelect = d3.select("#monthFilterSelect");
+    buildFilterOptions(regionSelect, monthSelect, data);
 
-    const initialRegion = Object.keys(data)[0];
-    const initialValue = `region::${normalizeRegionName(initialRegion)}`;
-    select.property("value", initialValue);
-    updateChart(initialValue);
+    regionSelect.property("value", "all");
+    monthSelect.property("value", "all");
+    updateChart();
 
-    select.on("change", function () {
-        const selectedValue = d3.select(this).property("value");
-        updateChart(selectedValue);
-    });
+    regionSelect.on("change", updateChart);
+    monthSelect.on("change", updateChart);
 }).catch(error => {
     console.error("Lỗi tải dữ liệu JSON:", error);
 });
@@ -56,8 +54,9 @@ function extractMonth(dateString) {
     return chunks[1];
 }
 
-function buildGlobalFilterOptions(select, dataByRegion) {
-    select.html("");
+function buildFilterOptions(regionSelect, monthSelect, dataByRegion) {
+    regionSelect.html("");
+    monthSelect.html("");
 
     const regions = Array.from(
         new Map(
@@ -68,51 +67,61 @@ function buildGlobalFilterOptions(select, dataByRegion) {
         new Set(window.globalWeatherRecords.map(d => d.month).filter(Boolean))
     ).sort((a, b) => Number(a) - Number(b));
 
-    const allOption = select.append("option")
-        .attr("value", "all::all")
-        .text("Tất cả dữ liệu");
+    regionSelect.append("option")
+        .attr("value", "all")
+        .text("Tất cả khu vực");
 
-    select.append("optgroup").attr("label", "Lọc theo vùng")
-        .selectAll("option")
+    regionSelect.selectAll("option.region-option")
         .data(regions)
         .enter()
         .append("option")
-        .attr("value", d => `region::${d.regionKey}`)
+        .attr("class", "region-option")
+        .attr("value", d => d.regionKey)
         .text(d => d.displayName);
 
-    select.append("optgroup").attr("label", "Lọc theo tháng")
-        .selectAll("option")
+    monthSelect.append("option")
+        .attr("value", "all")
+        .text("Tất cả tháng");
+
+    monthSelect.selectAll("option.month-option")
         .data(months)
         .enter()
         .append("option")
-        .attr("value", d => `month::${d}`)
+        .attr("class", "month-option")
+        .attr("value", d => d)
         .text(d => `Tháng ${Number(d)}`);
-
-    allOption.property("selected", false);
 }
 
-function updateChart(filterToken) {
+function updateChart() {
     if (!window.globalWeatherRecords.length) return;
 
-    const [filterType, rawValue] = String(filterToken || "all::all").split("::");
+    const regionSelect = document.getElementById("globalFilterSelect");
+    const monthSelect = document.getElementById("monthFilterSelect");
+    const selectedRegionValue = regionSelect ? regionSelect.value : "all";
+    const selectedMonthValue = monthSelect ? monthSelect.value : "all";
+
     let filteredRecords = window.globalWeatherRecords;
     let selectedRegion = "Tất cả vùng";
     let selectedMonth = "Tất cả tháng";
     let badgeText = "Tất cả dữ liệu";
 
-    if (filterType === "region") {
-        filteredRecords = window.globalWeatherRecords.filter(d => d.regionKey === rawValue);
-        const selectedRegionRecord = filteredRecords[0];
-        selectedRegion = selectedRegionRecord ? selectedRegionRecord.region : rawValue;
-        badgeText = `Vùng ${selectedRegion}`;
-    } else if (filterType === "month") {
-        filteredRecords = window.globalWeatherRecords.filter(d => d.month === rawValue);
-        selectedMonth = `Tháng ${Number(rawValue)}`;
-        badgeText = `Tháng ${Number(rawValue)}`;
+    if (selectedRegionValue !== "all") {
+        filteredRecords = filteredRecords.filter(d => d.regionKey === selectedRegionValue);
+        const selectedRegionRecord = filteredRecords[0] || window.globalWeatherRecords.find(d => d.regionKey === selectedRegionValue);
+        selectedRegion = selectedRegionRecord ? selectedRegionRecord.region : selectedRegionValue;
     }
 
-    if (filterType === "all") {
-        badgeText = "Tất cả dữ liệu";
+    if (selectedMonthValue !== "all") {
+        filteredRecords = filteredRecords.filter(d => d.month === selectedMonthValue);
+        selectedMonth = `Tháng ${Number(selectedMonthValue)}`;
+    }
+
+    if (selectedRegionValue !== "all" && selectedMonthValue !== "all") {
+        badgeText = `${selectedRegion} • ${selectedMonth}`;
+    } else if (selectedRegionValue !== "all") {
+        badgeText = `Vùng ${selectedRegion}`;
+    } else if (selectedMonthValue !== "all") {
+        badgeText = selectedMonth;
     }
 
     updateFilterBadge(badgeText, filteredRecords.length);
@@ -122,10 +131,11 @@ function updateChart(filterToken) {
 
     const event = new CustomEvent("dataChanged", {
         detail: {
-            filterType,
-            filterValue: rawValue,
+            filterType: selectedRegionValue !== "all" && selectedMonthValue !== "all" ? "combined" : (selectedRegionValue !== "all" ? "region" : (selectedMonthValue !== "all" ? "month" : "all")),
+            filterValue: { region: selectedRegionValue, month: selectedMonthValue },
             region: selectedRegion,
             month: selectedMonth,
+            label: badgeText,
             data: filteredRecords,
             raw: window.globalWeatherData
         }

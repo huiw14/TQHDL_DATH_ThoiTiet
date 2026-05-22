@@ -11,7 +11,7 @@
 /* Task 3: Mini Dashboard */
 .mini-dashboard {
     display: grid;
-    grid-template-columns: 1fr 2fr;
+    grid-template-columns: 1fr;
     gap: 15px;
     height: 100%;
 }
@@ -198,14 +198,19 @@ body {
 }
 
 .header-filter {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto minmax(180px, 1fr) auto minmax(180px, 1fr);
     align-items: center;
-    gap: 10px;
+    gap: 10px 12px;
 }
 
 .header-filter label {
     font-weight: 600;
     color: var(--text-main);
+}
+
+.header-filter select {
+    min-width: 180px;
 }
 
 body.is-updating .card {
@@ -224,8 +229,19 @@ body.is-updating .card {
     gap: 20px;
 }
 
-.left-panel { display: flex; flex-direction: column; gap: 20px; }
-.right-panel { display: flex; flex-direction: column; gap: 20px; }
+.left-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    position: sticky;
+    top: 20px;
+    height: fit-content;
+}
+.right-panel {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
 
 /* Cards */
 .card {
@@ -316,6 +332,10 @@ svg { display: block; overflow: visible; }
 .pie-percent {
     font-size: 11px;
     opacity: 0.9;
+}
+
+.span-2-cols {
+    grid-column: span 2;
 }
 
 /* 4. Tiêu đề Bar Chart */
