@@ -29,7 +29,7 @@
         <div class="kpi-panel-header">
             <div>
                 <h2>Task 3: Chỉ số vùng đang chọn</h2>
-                <p>Khu vực: <span id="detail-province">Chưa chọn</span> | Trạng thái: <span id="kpi-condition">--</span></p>
+                <p>Vùng: <span id="detail-region">Chưa chọn</span> | Tỉnh: <span id="detail-province">Chưa chọn</span> | Trạng thái: <span id="kpi-condition">--</span></p>
             </div>
         </div>
         <div class="kpi-cards-grid">
@@ -57,6 +57,7 @@
                 <span class="kpi-label">Chỉ số UV</span>
                 <strong class="kpi-value kpi-uv-val" id="kpi-uv">--</strong>
                 <span class="kpi-unit">index</span>
+                <span id="kpi-uv-flag" class="kpi-flag" style="font-size:12px; margin-left:8px; color:#A32D2D; display:none;">Bất thường UV: 0%</span>
             </article>
         </div>
     </section>
@@ -66,7 +67,6 @@
             <section id="map-container" class="card dashboard-section map-section">
                 <div class="section-header">
                     <h2>Bản đồ thời tiết</h2>
-                    <span class="section-meta">Task 4 + 6</span>
                 </div>
                 <div class="chart-shell map-shell">
                     <div id="map-tooltip" class="tooltip"></div>
@@ -77,7 +77,6 @@
             <section id="timeline-container" class="card dashboard-section timeline-section">
                 <div class="section-header">
                     <h2>Timeline nhiệt độ</h2>
-                    <span class="section-meta">Task 1 + 11</span>
                 </div>
                 <div class="timeline-grid">
                     <div class="chart-tile">
@@ -96,7 +95,6 @@
             <section id="task2-5-container" class="card dashboard-section">
                 <div class="section-header">
                     <h2>So sánh nhiệt độ</h2>
-                    <span class="section-meta">Task 2 + 5</span>
                 </div>
                 <div class="sub-grid-2-cols compact-grid">
                     <div class="chart-tile">
@@ -113,29 +111,21 @@
             <section id="task7-9-container" class="card dashboard-section">
                 <div class="section-header">
                     <h2>Tần suất trạng thái</h2>
-                    <span class="section-meta">Task 7 + 9</span>
                 </div>
                 <div class="task7-9-grid">
                     <div class="chart-tile span-2-cols">
-                        <h3>Task 7: Tần suất trạng thái thời tiết</h3>
                         <div id="chart-task7" class="chart-wrapper chart-panel"></div>
                     </div>
                     <div class="chart-tile">
-                        <h3>Task 9: Tỷ trọng 3 miền</h3>
                         <div id="pie-task9" class="chart-panel"></div>
                     </div>
                     <div class="chart-tile">
-                        <h3>Task 9: Trạng thái theo miền</h3>
                         <div id="bar-task9" class="chart-panel"></div>
                     </div>
                 </div>
             </section>
 
             <section id="task8-container" class="card dashboard-section">
-                <div class="section-header">
-                    <h2>Task 8: Trạng thái thời tiết</h2>
-                    <span class="section-meta">So sánh nhiệt độ theo condition</span>
-                </div>
                 <div id="chart-task8" class="chart-panel chart-panel-large"></div>
             </section>
         </section>
@@ -144,7 +134,6 @@
             <section id="scatter-container" class="card dashboard-section">
                 <div class="section-header">
                     <h2>UV và độ dài ban ngày</h2>
-                    <span class="section-meta">Task 10 + 12</span>
                 </div>
                 <div class="scatter-grid">
                     <div class="chart-tile">
@@ -160,6 +149,8 @@
         </section>
 
     </main>
+
+    <section id="dashboard-detail" hidden></section>
 
     <script src="js/main.js"></script>
     <script src="js/task3.js"></script>

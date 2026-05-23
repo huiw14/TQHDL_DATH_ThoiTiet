@@ -4,8 +4,10 @@
 // Hàm tải và xử lý dữ liệu
 async function loadAndRenderChart() {
   try {
-    // 1. Load dữ liệu từ file JSON
-    const data = await d3.json('./Data/weather_dataset.json');
+    // 1. Reuse shared in-memory data when available to avoid duplicate fetch/parse
+    const data = window.globalWeatherData && Object.keys(window.globalWeatherData).length
+      ? window.globalWeatherData
+      : await d3.json('./Data/weather_dataset_final.json');
     
     // 2. Xóa nội dung cũ nếu có
     d3.select('#chart-task2').html('');
@@ -83,6 +85,12 @@ async function loadAndRenderChart() {
     const g = svgElement.append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
     
+    const regionPalette = (window.dashboardChartTheme && window.dashboardChartTheme.regionPalette) || {
+      'Bắc': '#2563eb',
+      'Trung': '#f97316',
+      'Nam': '#16a34a'
+    };
+
     // 10. Vẽ các cột (bars)
     g.selectAll('.bar')
       .data(avgTemperatureByRegion, d => d.region)
@@ -93,9 +101,15 @@ async function loadAndRenderChart() {
       .attr('y', d => yScale(d.avgTemp))
       .attr('width', xScale.bandwidth())
       .attr('height', d => height - yScale(d.avgTemp))
-      .attr('fill', '#4CAF50')  // Màu xanh
+      .attr('fill', d => regionPalette[d.region] || '#4CAF50')
       .attr('opacity', 0.85)
-      .attr('stroke', '#2E7D32')  // Viền tối hơn
+      .attr('stroke', d => {
+        const c = regionPalette[d.region];
+        if (c === '#2563eb') return '#1d4ed8';
+        if (c === '#f97316') return '#c2410c';
+        if (c === '#16a34a') return '#15803d';
+        return '#2E7D32';
+      })
       .attr('stroke-width', 1);
     
     // 11. Thêm giá trị trên đầu mỗi cột
@@ -110,7 +124,7 @@ async function loadAndRenderChart() {
       .attr('font-size', '12px')
       .attr('font-weight', 'bold')
       .attr('fill', '#1B5E20')
-      .text(d => d.avgTemp.toFixed(1) + '°C');  // Làm tròn 1 chữ số thập phân
+      .text(d => window.safeFixed(d.avgTemp, 1, '--') + '°C');  // Làm tròn 1 chữ số thập phân
     
     // 12. Tạo trục X (Axis X)
     const xAxis = d3.axisBottom(xScale);

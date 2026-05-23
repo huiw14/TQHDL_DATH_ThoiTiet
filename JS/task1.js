@@ -263,7 +263,7 @@ function updateLineChart(records) {
             .on("mouseenter", function (event, d) {
                 task1State.tooltip
                     .style("opacity", 1)
-                    .html(`Ngày: <strong>${d3.timeFormat("%d-%m-%Y")(d.day)}</strong><br>Nhiệt độ: <strong>${d.avgTemp.toFixed(1)}°C</strong>`);
+                    .html(`Ngày: <strong>${d3.timeFormat("%d-%m-%Y")(d.day)}</strong><br>Nhiệt độ: <strong>${window.safeFixed(d.avgTemp,1,'--')}°C</strong>`);
             })
             .on("mousemove", function (event) {
                 task1State.tooltip
@@ -277,7 +277,7 @@ function updateLineChart(records) {
             .on("mouseenter", function (event, d) {
                 task1State.tooltip
                     .style("opacity", 1)
-                    .html(`Ngày: <strong>${d3.timeFormat("%d-%m-%Y")(d.day)}</strong><br>Nhiệt độ: <strong>${d.avgTemp.toFixed(1)}°C</strong>`);
+                    .html(`Ngày: <strong>${d3.timeFormat("%d-%m-%Y")(d.day)}</strong><br>Nhiệt độ: <strong>${window.safeFixed(d.avgTemp,1,'--')}°C</strong>`);
             })
             .on("mousemove", function (event) {
                 task1State.tooltip

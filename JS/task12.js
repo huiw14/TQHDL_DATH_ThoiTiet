@@ -6,12 +6,31 @@ document.addEventListener("dataChanged", function (event) {
     drawTask12_ScatterPlot(regionData);
 });
 
+if (window.globalWeatherRecords && window.globalWeatherRecords.length) {
+    drawTask12_ScatterPlot(window.globalWeatherRecords);
+}
+
+function ensureTask12Tooltip() {
+    let tooltip = d3.select('#task12-tooltip');
+    if (tooltip.empty()) {
+        tooltip = d3.select('body').append('div')
+            .attr('id', 'task12-tooltip')
+            .attr('class', 'tooltip')
+            .style('display', 'none');
+    }
+    return tooltip;
+}
+
 function drawTask12_ScatterPlot(data) {
     const svg = d3.select("#chart-task12");
     svg.selectAll("*").remove();
 
     const svgNode = svg.node();
     if (!svgNode || !data || !data.length) return;
+
+    // Filter out records missing numeric day_length or uv (cleaned dataset may null these)
+    const filtered = data.filter(d => Number.isFinite(Number(d.day_length)) && Number.isFinite(Number(d.uv)));
+    if (!filtered.length) return;
 
     const totalWidth = svgNode.getBoundingClientRect().width || 250;
     const totalHeight = svgNode.getBoundingClientRect().height || 200;
@@ -24,12 +43,12 @@ function drawTask12_ScatterPlot(data) {
                  .attr("transform", `translate(${margin.left},${margin.top})`);
 
     const xScale = d3.scaleLinear()
-                     .domain(d3.extent(data, d => d.day_length))
+                     .domain(d3.extent(filtered, d => Number(d.day_length)))
                      .nice()
                      .range([0, width]);
 
     const yScale = d3.scaleLinear()
-                     .domain([0, d3.max(data, d => d.uv) || 0])
+                     .domain([0, d3.max(filtered, d => Number(d.uv)) || 0])
                      .nice()
                      .range([height, 0]);
 
@@ -54,15 +73,61 @@ function drawTask12_ScatterPlot(data) {
      .style("font-size", "10px")
      .text("UV");
 
+    const tooltip = ensureTask12Tooltip();
     g.selectAll("circle")
-     .data(data)
+     .data(filtered)
      .enter()
      .append("circle")
+     .attr("class", "point")
      .attr("cx", d => xScale(d.day_length))
      .attr("cy", d => yScale(d.uv))
-     .attr("r", 4)
-     .attr("fill", "#f97316")
-     .attr("opacity", 0.6)
-     .append("title")
-     .text(d => `${d.province}\nĐộ dài ban ngày: ${d.day_length.toFixed(2)} giờ\nChỉ số UV: ${d.uv.toFixed(1)}`);
+      .attr("r", 4)
+        .attr("fill", "#f97316")
+        .attr("opacity", 0.35)
+     .attr("cursor", "pointer")
+     .on('mouseenter', function(event, d) {
+        d3.select(this).attr('r', 7).attr('opacity', 1).attr('fill', '#ea580c');
+             tooltip.style('display', 'block').style('opacity', 1)
+                 .html(`<strong>${d.province}</strong><br/>Độ dài ban ngày: ${window.safeFixed(d.day_length,2,'--')} giờ<br/>Chỉ số UV: ${window.safeFixed(d.uv,1,'--')}`);
+     })
+     .on('mousemove', function(event) {
+        tooltip.style('left', (event.pageX + 12) + 'px')
+          .style('top', (event.pageY - 28) + 'px');
+     })
+      .on('mouseleave', function() {
+          d3.select(this).attr('r', 4).attr('opacity', 0.35).attr('fill', '#f97316');
+        tooltip.style('opacity', 0).style('display', 'none');
+     });
+
+        // Regression line for Task12 (UV ~ day_length)
+        try {
+            const pts = data.map(d => [Number(d.day_length), Number(d.uv)]).filter(p => Number.isFinite(p[0]) && Number.isFinite(p[1]));
+            if (pts.length >= 2) {
+                const n = pts.length;
+                const sumX = d3.sum(pts, p => p[0]);
+                const sumY = d3.sum(pts, p => p[1]);
+                const sumXY = d3.sum(pts, p => p[0] * p[1]);
+                const sumX2 = d3.sum(pts, p => p[0] * p[0]);
+                const denom = (n * sumX2 - sumX * sumX) || 1e-9;
+                const m = (n * sumXY - sumX * sumY) / denom;
+                const b = (sumY - m * sumX) / n;
+
+                const xMin = xScale.domain()[0];
+                const xMax = xScale.domain()[1];
+                const yMin = m * xMin + b;
+                const yMax = m * xMax + b;
+
+                g.append('line')
+                 .attr('class', 'regression-line')
+                 .attr('x1', xScale(xMin))
+                 .attr('y1', yScale(yMin))
+                 .attr('x2', xScale(xMax))
+                 .attr('y2', yScale(yMax))
+                 .attr('stroke', '#222')
+                 .attr('stroke-width', 1.2)
+                 .attr('stroke-dasharray', '4 3');
+            }
+        } catch (e) {
+            console.warn('Task12 regression error', e);
+        }
 }

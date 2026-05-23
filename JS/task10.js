@@ -175,7 +175,7 @@ function updateScatterChart(records) {
             .attr('fill', 'var(--chart-amber)')
             .attr('stroke', 'var(--chart-amber)')
             .attr('stroke-width', 1)
-            .attr('opacity', 0.6)
+            .attr('opacity', 0.35)
             .call(enter => enter.transition().duration(750).attr('r', 5))
             .on('mouseenter', handleTask10MouseEnter)
             .on('mousemove', handleTask10MouseMove)
@@ -196,6 +196,41 @@ function updateScatterChart(records) {
     );
 
     applyTask10BrushSelection(task10State.brushedSelection);
+
+    // --- Regression line (least squares) ---
+    try {
+        const xy = data.map(d => [Number(d.temp), Number(d.uv)]).filter(p => Number.isFinite(p[0]) && Number.isFinite(p[1]));
+        if (xy.length >= 2) {
+            const n = xy.length;
+            const sumX = d3.sum(xy, p => p[0]);
+            const sumY = d3.sum(xy, p => p[1]);
+            const sumXY = d3.sum(xy, p => p[0] * p[1]);
+            const sumX2 = d3.sum(xy, p => p[0] * p[0]);
+            const denom = (n * sumX2 - sumX * sumX) || 1e-9;
+            const m = (n * sumXY - sumX * sumY) / denom;
+            const b = (sumY - m * sumX) / n;
+
+            const xMin = task10State.xScale.domain()[0];
+            const xMax = task10State.xScale.domain()[1];
+            const yForMin = m * xMin + b;
+            const yForMax = m * xMax + b;
+
+            // remove old regression
+            task10State.root.selectAll('.regression-line').remove();
+
+            task10State.root.append('line')
+                .attr('class', 'regression-line')
+                .attr('x1', task10State.xScale(xMin))
+                .attr('y1', task10State.yScale(yForMin))
+                .attr('x2', task10State.xScale(xMax))
+                .attr('y2', task10State.yScale(yForMax))
+                .attr('stroke', 'rgba(34,34,34,0.8)')
+                .attr('stroke-width', 1.5)
+                .attr('stroke-dasharray', '4 3');
+        }
+    } catch (e) {
+        console.warn('Regression failed for Task10', e);
+    }
 }
 
 function handleTask10MouseEnter(event, d) {

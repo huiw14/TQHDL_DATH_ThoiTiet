@@ -16,27 +16,97 @@ let pieSvg, barSvg, x9, y9, xAxis9, yAxis9;
 let colorScale;
 let task9Tooltip;
 
+const task9ThemeFallback = {
+    regionPalette: {
+        'Bắc': '#2563eb',
+        'Trung': '#f97316',
+        'Nam': '#16a34a'
+    }
+};
+
 function normalizeRegionName(name) {
     return String(name || "")
         .replace(/\s*\[\*\]\s*/g, "")
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
+        .replace(/đ/g, "d")
+        .replace(/Đ/g, "D")
     .replace(/[^\w ]+/g, " ")
     .replace(/\s+/g, " ")
         .toLowerCase()
         .trim();
 }
 
+function getMainRegionFromRegionName(regionName) {
+    return regionGroupMap[normalizeRegionName(regionName)] || null;
+}
+
+function buildProvinceToMainRegionMap() {
+    const map = new Map();
+    const source = window.globalWeatherData || {};
+    Object.entries(source).forEach(([regionName, records]) => {
+        const mainRegion = getMainRegionFromRegionName(regionName);
+        if (!mainRegion || !Array.isArray(records)) return;
+        records.forEach(rec => {
+            const key = normalizeRegionName(rec && rec.province);
+            if (key) map.set(key, mainRegion);
+        });
+    });
+    return map;
+}
+
+function ensureTask9Tooltip() {
+    if (window.ensureChartTooltip) {
+        return window.ensureChartTooltip("task9-tooltip");
+    }
+
+    let tooltip = d3.select("#task9-tooltip");
+    if (tooltip.empty()) {
+        tooltip = d3.select("body").append("div")
+            .attr("id", "task9-tooltip")
+            .attr("class", "chart-tooltip")
+            .style("position", "fixed")
+            .style("pointer-events", "none")
+            .style("opacity", 0)
+            .style("transform", "translateY(4px)");
+    }
+    return tooltip;
+}
+
+function buildTask9TooltipHtml(title, rows, footer) {
+    if (window.buildChartTooltipHtml) {
+        return window.buildChartTooltipHtml(title, rows, footer);
+    }
+
+    let html = `<div class="tt-title"><strong>${title}</strong></div>`;
+    if (Array.isArray(rows) && rows.length) {
+        html += '<div class="tt-rows">';
+        rows.forEach(row => {
+            html += `<div class="tt-row"><span class="tt-label">${row.label}</span>: <span class="tt-value">${row.value}</span></div>`;
+        });
+        html += '</div>';
+    }
+    if (footer) html += `<div class="tt-footer">${footer}</div>`;
+    return html;
+}
+
 function initTask9(records) {
-    const source = Array.isArray(records) && records.length
-        ? records
-        : (window.globalWeatherRecords || []);
+    const fallback = (() => {
+        if (Array.isArray(window.globalWeatherRecords) && window.globalWeatherRecords.length) return window.globalWeatherRecords;
+        if (window.globalWeatherData && Object.keys(window.globalWeatherData).length) return Object.values(window.globalWeatherData).flat();
+        return [];
+    })();
+
+    const source = Array.isArray(records) && records.length ? records : fallback;
+    const provinceToMainRegion = buildProvinceToMainRegionMap();
 
     // 1. Tiền xử lý: Gom dữ liệu về 3 miền chính
     const processedData = { "Bắc": [], "Trung": [], "Nam": [] };
 
     source.forEach(record => {
-        const mainRegion = regionGroupMap[normalizeRegionName(record.region)];
+        const fromRegionField = getMainRegionFromRegionName(record && record.region);
+        const fromProvince = provinceToMainRegion.get(normalizeRegionName(record && record.province));
+        const mainRegion = fromRegionField || fromProvince;
         if (mainRegion) processedData[mainRegion].push(record);
     });
 
@@ -47,18 +117,28 @@ function initTask9(records) {
         details: records // Lưu lại để dùng cho Bar chart khi click
     }));
 
+    const regionPalette = (window.dashboardChartTheme && window.dashboardChartTheme.regionPalette)
+        || task9ThemeFallback.regionPalette;
+
     colorScale = d3.scaleOrdinal()
         .domain(["Bắc", "Trung", "Nam"])
         .range([
-            window.dashboardChartTheme.regionPalette["Bắc"],
-            window.dashboardChartTheme.regionPalette["Trung"],
-            window.dashboardChartTheme.regionPalette["Nam"]
+            regionPalette["Bắc"],
+            regionPalette["Trung"],
+            regionPalette["Nam"]
         ]);
-    task9Tooltip = window.ensureChartTooltip("task9-tooltip");
+    task9Tooltip = ensureTask9Tooltip();
 
     const nonEmptyPieData = pieData.filter(d => d.count > 0);
     if (!nonEmptyPieData.length) {
-        d3.select("#pie-task9").selectAll("*").remove();
+        const pieContainer = d3.select("#pie-task9");
+        pieContainer.selectAll("*").remove();
+        pieContainer.append("div")
+            .attr("class", "chart-empty")
+            .style("padding", "24px 12px")
+            .style("color", "#64748b")
+            .style("text-align", "center")
+            .text("Không có dữ liệu miền để vẽ pie chart");
         d3.select("#bar-task9").selectAll("*").remove();
         return;
     }
@@ -72,8 +152,8 @@ function initTask9(records) {
 
 function drawPieChart(pieData) {
     const container = d3.select("#pie-task9");
-    const width = container.node().clientWidth || 300;
-    const height = 320;
+    const width = Math.max(container.node().clientWidth || 300, 240);
+    const height = Math.max(320, 180);
     const radius = Math.min(width, height - 56) / 2 - 18;
 
     container.selectAll("*").remove();
@@ -109,11 +189,11 @@ function drawPieChart(pieData) {
     slices
         .on("mouseover", function(event, d) {
             task9Tooltip.style("opacity", 1).style("transform", "translateY(0)")
-                .html(window.buildChartTooltipHtml(
+                .html(buildTask9TooltipHtml(
                     `Miền ${d.data.region}`,
                     [
                         { label: "Số ngày", value: d.data.count },
-                        { label: "Tỷ trọng", value: `${((d.data.count / d3.sum(pieData, x => x.count)) * 100).toFixed(1)}%` }
+                        { label: "Tỷ trọng", value: `${window.safeFixed((d.data.count / d3.sum(pieData, x => x.count)) * 100, 1, '0')}%` }
                     ],
                     "Click để xem trạng thái chi tiết"
                 ));
@@ -134,32 +214,34 @@ function drawPieChart(pieData) {
         updateBarChartTask9(d.data.details, d.data.region);
     });
 
-    // --- THÊM TEXT LABEL CÓ PHẦN TRĂM
+    // --- Create a compact legend to the right of the pie (always readable)
     const totalCount = d3.sum(pieData, d => d.count);
+    const legendX = width - 140;
+    const legendY = 40;
 
-    const labels = pieSvg.selectAll("text")
-        .data(pie(pieData))
+    const legendGroup = svg.append('g')
+        .attr('class', 'pie-legend')
+        .attr('transform', `translate(${legendX}, ${legendY})`);
+
+    const legendItems = legendGroup.selectAll('.legend-item')
+        .data(pieData)
         .enter()
-        .append("text")
-        .attr("class", "pie-label") // Gắn class CSS vào đây
-        .attr("transform", d => `translate(${arc.centroid(d)})`)
-        .attr("text-anchor", "middle");
+        .append('g')
+        .attr('class', 'legend-item')
+        .attr('transform', (d, i) => `translate(0, ${i * 22})`);
 
-    // Dòng 1: Tên miền
-    labels.append("tspan")
-        .attr("x", 0)
-        .attr("y", "-0.2em")
-        .text(d => d.data.region);
+    legendItems.append('rect')
+        .attr('width', 12)
+        .attr('height', 12)
+        .attr('rx', 3)
+        .attr('ry', 3)
+        .attr('fill', d => colorScale(d.region));
 
-    // Dòng 2: Tính phần trăm
-    labels.append("tspan")
-        .attr("class", "pie-percent")
-        .attr("x", 0)
-        .attr("y", "1.2em")
-        .text(d => {
-            const percent = (d.data.count / totalCount * 100).toFixed(1);
-            return `${percent}%`;
-        });
+    legendItems.append('text')
+        .attr('x', 18)
+        .attr('y', 10)
+        .attr('font-size', '12px')
+        .text(d => `${d.region} — ${window.safeFixed((d.count / totalCount) * 100, 1, '0')}%`);
 }
 
 function drawBarChart(records, regionName) {
@@ -203,13 +285,34 @@ function drawBarChart(records, regionName) {
 
 function updateBarChartTask9(records, regionName) {
     // Thống kê trạng thái thời tiết của vùng được chọn
-    const conditionCounts = d3.rollups(records, v => v.length, d => d.condition)
-        .map(([condition, count]) => ({ condition, count }))
-        .sort((a, b) => d3.descending(a.count, b.count));
+    let conditionCounts = d3.rollups(records, v => v.length, d => d.condition)
+        .map(([condition, count]) => ({ condition, count }));
+
+    // Prefer canonical condition order when available, otherwise fallback to frequency
+    if (Array.isArray(window.conditionOrder) && window.conditionOrder.length) {
+        const order = window.conditionOrder;
+        const byName = new Map(conditionCounts.map(d => [d.condition, d]));
+        const ordered = [];
+        order.forEach(name => {
+            if (byName.has(name)) ordered.push(byName.get(name));
+        });
+        // then append any other conditions sorted by frequency
+        const remaining = conditionCounts.filter(d => !order.includes(d.condition)).sort((a, b) => d3.descending(a.count, b.count));
+        conditionCounts = ordered.concat(remaining);
+    } else {
+        conditionCounts = conditionCounts.sort((a, b) => d3.descending(a.count, b.count));
+    }
 
     // Cập nhật scale
     x9.domain(conditionCounts.map(d => d.condition));
-    y9.domain([0, d3.max(conditionCounts, d => d.count)]).nice();
+    const maxCount = d3.max(conditionCounts, d => d.count) || 1;
+    const meanCount = d3.mean(conditionCounts, d => d.count) || 1;
+    // If data is extremely skewed, use a sqrt scale to compress large bars
+    if (maxCount > meanCount * 8) {
+        y9 = d3.scalePow().exponent(0.5).range([y9.range()[0], y9.range()[1]]).domain([0, maxCount]);
+    } else {
+        y9 = d3.scaleLinear().range(y9.range()).domain([0, maxCount]).nice();
+    }
 
     // --- VẼ TRỤC X VÀ XOAY CHỮ NGHIÊNG -45 ĐỘ ---
     xAxis9.transition().duration(600).call(d3.axisBottom(x9));
@@ -242,7 +345,7 @@ function updateBarChartTask9(records, regionName) {
             
             // Hiện Tooltip
             task9Tooltip.style("opacity", 1).style("transform", "translateY(0)")
-                .html(window.buildChartTooltipHtml(
+                .html(buildTask9TooltipHtml(
                     d.condition,
                     [
                         { label: "Số ngày", value: d.count },
@@ -253,8 +356,8 @@ function updateBarChartTask9(records, regionName) {
         })
         .on("mousemove", function(event) {
              // Cho tooltip chạy theo con trỏ chuột
-             tooltip.style("left", (event.clientX + 10) + "px")
-                 .style("top", (event.clientY - 20) + "px");
+             task9Tooltip.style("left", (event.pageX + 12) + "px")
+                 .style("top", (event.pageY + 12) + "px");
         })
         .on("mouseout", function() {
             // Rời chuột thì trả về màu gốc và giấu tooltip
@@ -270,7 +373,11 @@ function updateBarChartTask9(records, regionName) {
 }
 
 document.addEventListener("dataChanged", function (event) {
-    initTask9(event.detail.data || []);
+    const detail = event.detail || {};
+    const preferred = Array.isArray(detail.data) && detail.data.length
+        ? detail.data
+        : (detail.fullData || []);
+    initTask9(preferred);
 });
 
 if (window.globalWeatherRecords && window.globalWeatherRecords.length) {

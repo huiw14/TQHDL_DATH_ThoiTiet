@@ -181,16 +181,48 @@ function renderMap(records) {
     .attr('y', 18 + legendHeight)
     .attr('dy', '0.3em')
     .attr('font-size', '11px')
-    .text(minTemp.toFixed(1));
+    .text(window.safeFixed(minTemp, 1, '--'));
 
   legendGroup.append('text')
     .attr('x', legendWidth + 6)
     .attr('y', 18)
     .attr('dy', '0.35em')
     .attr('font-size', '11px')
-    .text(maxTemp.toFixed(1));
+    .text(window.safeFixed(maxTemp, 1, '--'));
 
   renderStationDots(safeRecords);
+
+  // --- Add a visual inset for southern islands (Trường Sa / Hoàng Sa)
+  mapState.svg.selectAll('.island-inset').remove();
+  try {
+    const insetW = 180;
+    const insetH = 120;
+    const insetX = mapState.width - insetW - 16;
+    const insetY = mapState.height - insetH - 16;
+
+    const inset = mapState.svg.append('g')
+      .attr('class', 'island-inset')
+      .attr('transform', `translate(${insetX}, ${insetY})`);
+
+    inset.append('rect')
+      .attr('width', insetW)
+      .attr('height', insetH)
+      .attr('fill', 'rgba(255,255,255,0.85)')
+      .attr('stroke', '#94a3b8')
+      .attr('stroke-dasharray', '4 3')
+      .attr('rx', 6)
+      .attr('ry', 6);
+
+    inset.append('text')
+      .attr('x', 10)
+      .attr('y', 18)
+      .attr('font-size', '12px')
+      .attr('font-weight', 600)
+      .text('Quần đảo Trường Sa / Hoàng Sa');
+
+  } catch (e) {
+    // ignore inset errors
+  }
 }
 
 function buildProvinceTemperatureMap(records) {
@@ -271,7 +303,7 @@ function handleProvinceMouseOver(event, feature) {
   mapState.tooltip
     .style('display', 'block')
     .style('opacity', 1)
-    .html(`<strong>${escapeHtml(provinceName)}</strong><br/>Nhiệt độ: ${avgTemp == null ? 'Không có dữ liệu' : `${avgTemp.toFixed(1)} °C`}`);
+    .html(`<strong>${escapeHtml(provinceName)}</strong><br/>Nhiệt độ: ${avgTemp == null ? 'Không có dữ liệu' : `${window.safeFixed(avgTemp,1,'--')} °C`}`);
 
   if (!mapState.selectedProvince || getProvinceName(feature) !== mapState.selectedProvince) {
     target.raise();
@@ -305,8 +337,15 @@ function handleProvinceClick(event, feature) {
   if (selectedRegionKey) {
     const regionSelect = document.getElementById('regionSelect');
     if (regionSelect) {
-      const matchingOption = Array.from(regionSelect.options).find(option => option.value === selectedRegionKey || option.text === selectedRegionKey);
-      regionSelect.value = matchingOption ? matchingOption.value : selectedRegionKey;
+      let matchingOption = Array.from(regionSelect.options).find(option => option.value === selectedRegionKey || option.text === selectedRegionKey);
+      if (!matchingOption) {
+        // If the option is missing (possible if keys differ in diacritics), add it so select shows correctly
+        matchingOption = document.createElement('option');
+        matchingOption.value = selectedRegionKey;
+        matchingOption.text = selectedRegionKey;
+        regionSelect.appendChild(matchingOption);
+      }
+      regionSelect.value = matchingOption.value;
     }
 
     const dispatcher = window.dispatchDataUpdate || (typeof dispatchDataUpdate === 'function' ? dispatchDataUpdate : null);
