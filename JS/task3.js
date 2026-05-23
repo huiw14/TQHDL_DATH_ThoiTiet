@@ -1,4 +1,6 @@
-// Task 3: Mini Dashboard với chi tiết vùng khi click
+// File: JS/task3.js
+// Purpose: KPI mini-dashboard showing selected region/province metrics and condition list.
+// Comment conventions: Use short, informative comments; prefer `// NOTE:` for important notes.
 // Click vào tên vùng -> Update Detail Card
 
 let weatherData = null;
@@ -7,8 +9,12 @@ let regionsList = [];
 // Load dữ liệu thời tiết
 async function loadWeatherData() {
     try {
-        const response = await fetch('Data/weather_dataset.json');
-        weatherData = await response.json();
+        if (window.globalWeatherData && Object.keys(window.globalWeatherData).length) {
+            weatherData = window.globalWeatherData;
+        } else {
+            const response = await fetch('Data/weather_dataset_final.json');
+            weatherData = await response.json();
+        }
         
         // Trích xuất danh sách vùng duy nhất
         regionsList = Array.from(new Set(Object.keys(weatherData)));
@@ -120,11 +126,11 @@ function updateRegionDetail(regionName) {
     
     // Update UI
     document.getElementById('selected-region-title').textContent = regionName;
-    document.getElementById('avg-temp').textContent = stats.avgTemp.toFixed(2) + ' °C';
-    document.getElementById('avg-rain').textContent = stats.avgRain.toFixed(2) + ' mm';
-    document.getElementById('avg-wind').textContent = stats.avgWind.toFixed(2) + ' kph';
-    document.getElementById('avg-humidity').textContent = stats.avgHumidity.toFixed(2) + ' %';
-    document.getElementById('avg-uv').textContent = stats.avgUv.toFixed(2);
+    document.getElementById('avg-temp').textContent = window.safeFixed(stats.avgTemp, 2, '--') + ' °C';
+    document.getElementById('avg-rain').textContent = window.safeFixed(stats.avgRain, 2, '--') + ' mm';
+    document.getElementById('avg-wind').textContent = window.safeFixed(stats.avgWind, 2, '--') + ' kph';
+    document.getElementById('avg-humidity').textContent = window.safeFixed(stats.avgHumidity, 2, '--') + ' %';
+    document.getElementById('avg-uv').textContent = window.safeFixed(stats.avgUv, 2, '--');
     document.getElementById('total-records').textContent = regionData.length;
     
     // Update danh sách trạng thái thời tiết
@@ -170,15 +176,26 @@ function calculateStats(regionData) {
 function updateConditionList(conditions) {
     const conditionList = document.getElementById('condition-list');
     conditionList.innerHTML = '';
-    
-    // Sắp xếp theo số lần xuất hiện
-    const sortedConditions = Object.entries(conditions)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5); // Chỉ lấy 5 trạng thái hàng đầu
-    
-    sortedConditions.forEach(([condition, count]) => {
+    // Sắp xếp theo thứ tự chuẩn nếu có, còn không thì theo số lần xuất hiện
+    const entries = Object.entries(conditions || {}).map(([c, n]) => ({ condition: c, count: n }));
+    let ordered = [];
+    if (Array.isArray(window.conditionOrder) && window.conditionOrder.length) {
+        const order = window.conditionOrder;
+        const byName = new Map(entries.map(e => [e.condition, e]));
+        // Add in the canonical order if present
+        order.forEach(name => {
+            if (byName.has(name)) ordered.push(byName.get(name));
+        });
+        // Add remaining entries sorted by count
+        const remaining = entries.filter(e => !order.includes(e.condition)).sort((a, b) => b.count - a.count);
+        ordered = ordered.concat(remaining);
+    } else {
+        ordered = entries.sort((a, b) => b.count - a.count);
+    }
+
+    ordered.slice(0, 5).forEach(e => {
         const li = document.createElement('li');
-        li.textContent = `${condition}: ${count} lần`;
+        li.textContent = `${e.condition}: ${e.count} lần`;
         conditionList.appendChild(li);
     });
 }

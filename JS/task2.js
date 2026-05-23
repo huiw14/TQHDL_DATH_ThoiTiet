@@ -1,11 +1,14 @@
-// D3.js Bar Chart - So sánh nhiệt độ trung bình theo vùng ở Việt Nam
-// ============================================================
+// File: JS/task2.js
+// Purpose: Nhiệt độ trung bình theo miền (bar chart)
+// Comment conventions: `// NOTE:`, `// TODO:`, `// FIXME:`. Keep comments concise.
 
 // Hàm tải và xử lý dữ liệu
 async function loadAndRenderChart() {
   try {
-    // 1. Load dữ liệu từ file JSON
-    const data = await d3.json('./Data/weather_dataset.json');
+    // 1. Reuse shared in-memory data when available to avoid duplicate fetch/parse
+    const data = window.globalWeatherData && Object.keys(window.globalWeatherData).length
+      ? window.globalWeatherData
+      : await d3.json('./Data/weather_dataset_final.json');
     
     // 2. Xóa nội dung cũ nếu có
     d3.select('#chart-task2').html('');
@@ -50,7 +53,7 @@ async function loadAndRenderChart() {
       return (order[a.region] || 999) - (order[b.region] || 999);
     });
     
-    console.log('Dữ liệu gom nhóm:', avgTemperatureByRegion);
+    // debug log removed
     
     // 6. Lấy kích thước của SVG container hiện có
     const svgElement = d3.select('#chart-task2');
@@ -83,6 +86,12 @@ async function loadAndRenderChart() {
     const g = svgElement.append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
     
+    const regionPalette = (window.dashboardChartTheme && window.dashboardChartTheme.regionPalette) || {
+      'Bắc': '#2563eb',
+      'Trung': '#f97316',
+      'Nam': '#16a34a'
+    };
+
     // 10. Vẽ các cột (bars)
     g.selectAll('.bar')
       .data(avgTemperatureByRegion, d => d.region)
@@ -93,9 +102,15 @@ async function loadAndRenderChart() {
       .attr('y', d => yScale(d.avgTemp))
       .attr('width', xScale.bandwidth())
       .attr('height', d => height - yScale(d.avgTemp))
-      .attr('fill', '#4CAF50')  // Màu xanh
+      .attr('fill', d => regionPalette[d.region] || '#4CAF50')
       .attr('opacity', 0.85)
-      .attr('stroke', '#2E7D32')  // Viền tối hơn
+      .attr('stroke', d => {
+        const c = regionPalette[d.region];
+        if (c === '#2563eb') return '#1d4ed8';
+        if (c === '#f97316') return '#c2410c';
+        if (c === '#16a34a') return '#15803d';
+        return '#2E7D32';
+      })
       .attr('stroke-width', 1);
     
     // 11. Thêm giá trị trên đầu mỗi cột
@@ -110,34 +125,44 @@ async function loadAndRenderChart() {
       .attr('font-size', '12px')
       .attr('font-weight', 'bold')
       .attr('fill', '#1B5E20')
-      .text(d => d.avgTemp.toFixed(1) + '°C');  // Làm tròn 1 chữ số thập phân
+      .text(d => window.safeFixed(d.avgTemp, 1, '--') + '°C');  // Làm tròn 1 chữ số thập phân
     
     // 12. Tạo trục X (Axis X)
     const xAxis = d3.axisBottom(xScale);
-    g.append('g')
-      .attr('class', 'x-axis')
+    const xAxisG = g.append('g')
+      .attr('class', 'axis x-axis')
       .attr('transform', `translate(0,${height})`)
-      .call(xAxis)
-      .style('font-size', '11px');
+      .call(xAxis);
+
+    // style ticks similar to Task8
+    xAxisG.selectAll('text')
+      .attr('transform', null)
+      .style('text-anchor', 'middle')
+      .style('font-size', '11px')
+      .attr('dy', '0.35em');
+
+    // X axis label (centered)
+    g.append('text')
+      .attr('class', 'chart-axis-label')
+      .attr('x', width / 2)
+      .attr('y', height + 30)
+      .attr('text-anchor', 'middle')
+      .text('Vùng');
     
     // 13. Tạo trục Y (Axis Y)
     const yAxis = d3.axisLeft(yScale)
       .ticks(5);  // Giảm số lượng tick
-    g.append('g')
-      .attr('class', 'y-axis')
-      .call(yAxis)
-      .style('font-size', '11px');
-    
-    // 14. Thêm nhãn cho trục Y (Nhiệt độ trung bình) - nằm ngoài SVG
-    svgElement.append('text')
-      .attr('class', 'y-label')
-      .attr('x', 15)
-      .attr('y', 10)
-      .attr('text-anchor', 'start')
-      .attr('font-size', '11px')
-      .attr('fill', '#666')
-      .text('°C');
-    console.log('✓ Biểu đồ đã được render thành công!');
+    const yAxisG = g.append('g')
+      .attr('class', 'axis y-axis')
+      .call(yAxis);
+
+    // Y axis label (rotated, centered)
+    g.append('text')
+      .attr('class', 'chart-axis-label')
+      .attr('transform', `translate(-36, ${height / 2}) rotate(-90)`)
+      .attr('text-anchor', 'middle')
+      .text('Nhiệt độ (°C)');
+    // debug log removed
     
   } catch (error) {
     console.error('Lỗi khi tải dữ liệu:', error);

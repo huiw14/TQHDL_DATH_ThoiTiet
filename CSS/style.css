@@ -383,6 +383,26 @@ svg {
     opacity: 0.9;
 }
 
+/* Standardize bar visuals across charts */
+.bar, .bar-detail {
+    rx: 8px;
+    ry: 8px;
+    opacity: 0.95;
+}
+
+.bar-label, .bar-value {
+    font-family: inherit;
+    font-size: 12px;
+    fill: var(--text-main);
+    font-weight: 700;
+}
+
+/* Ensure x-axis labels are visible and consistent */
+.axis text, .x-axis text, .y-axis text, .x-axis-task9 text {
+    fill: var(--text-muted);
+    font-size: 12px;
+}
+
 .bar.selected,
 .bar-detail.selected,
 .slice.selected {
@@ -410,11 +430,12 @@ svg {
     pointer-events: none;
     opacity: 0;
     border: 1px solid var(--tooltip-border);
-    box-shadow: 0 18px 36px rgba(15, 23, 42, 0.22);
-    transition: opacity 0.16s ease, transform 0.16s ease;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+    transition: opacity 0.12s ease, transform 0.12s ease;
     z-index: 1000;
     min-width: 170px;
-    backdrop-filter: blur(10px);
+    backdrop-filter: none; /* disabled to avoid expensive repaints during pointer move */
+    will-change: transform, opacity;
     transform: translateY(4px);
 }
 
@@ -606,6 +627,20 @@ svg {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 15px;
+}
+
+/* Stack Task 2 and Task 5 vertically and make them full-width */
+.stacked-2-full {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.stacked-2-full .chart-tile {
+    width: 100%;
+}
+.stacked-2-full svg,
+.stacked-2-full .chart-wrapper {
+    width: 100% !important;
 }
 
 .analytical-layout {
@@ -903,7 +938,7 @@ body {
 
 .task7-9-grid {
     display: grid;
-    grid-template-columns: 1.2fr 0.9fr 0.9fr;
+    grid-template-columns: 1fr;
     gap: 14px;
 }
 
@@ -1005,3 +1040,12 @@ body {
         align-items: flex-start;
     }
 }
+
+/* Project comment conventions
+     - File: CSS/style.css
+     - Purpose: main stylesheet for dashboard visuals and layout
+     - Comment style: use short block comments `/* ... */` for section headers
+         and single-line comments `/* NOTE: ... */` for small notes. Keep comments
+         concise and focused on intent (no implementation details).
+     - Section headers: use one-line comments before major sections (e.g., "/* Header */").
+*/
