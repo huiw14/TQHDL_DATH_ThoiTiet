@@ -3,7 +3,7 @@
 const task1Container = d3.select("#chart-task1");
 const task1TooltipId = "task1-tooltip";
 const task1Margin = { top: 28, right: 22, bottom: 40, left: 52 };
-const task1OuterHeight = 400;
+const task1OuterHeight = 320;
 
 const task1State = {
     svg: null,
@@ -109,14 +109,14 @@ function ensureTask1Chart() {
         .attr("class", "axis y-axis");
 
     task1State.root.append("text")
-        .attr("class", "axis-label")
+        .attr("class", "chart-axis-label")
         .attr("x", task1State.innerWidth / 2)
         .attr("y", task1State.innerHeight + 34)
         .attr("text-anchor", "middle")
         .text("Ngày");
 
     task1State.root.append("text")
-        .attr("class", "axis-label")
+        .attr("class", "chart-axis-label")
         .attr("transform", `translate(-42, ${task1State.innerHeight / 2}) rotate(-90)`)
         .attr("text-anchor", "middle")
         .text("Nhiệt độ (°C)");
@@ -177,7 +177,7 @@ function updateLineChart(records) {
             .attr("y", task1State.innerHeight / 2)
             .attr("text-anchor", "middle")
             .attr("fill", "#64748b")
-            .text("Không có dữ liệu để hiển thị Task 1");
+            .text("Không có dữ liệu để hiển thị");
         return;
     }
 
@@ -216,13 +216,14 @@ function updateLineChart(records) {
         .duration(750)
         .call(d3.axisBottom(x)
             .ticks(5)
-            .tickFormat(d3.timeFormat("%d/%m")))
-        .selection()
-        .selectAll("text")
-        .attr("transform", "rotate(-45)")
-        .style("text-anchor", "end")
-        .attr("dx", "-.8em")
-        .attr("dy", ".15em");
+            .tickFormat(d3.timeFormat("%d/%m")));
+
+    // Make x-axis tick labels horizontal (parallel to axis)
+    task1State.xAxisGroup.selectAll("text")
+        .attr("transform", null)
+        .style("text-anchor", "middle")
+        .attr("dx", "0")
+        .attr("dy", ".35em");
 
     task1State.yAxisGroup
         .transition()

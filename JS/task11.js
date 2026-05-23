@@ -70,27 +70,36 @@ function drawTask11_LineChart(data) {
                      .range([height, 0]);
 
     // 7. Vẽ Trục X (Định dạng hiển thị ngày/tháng ngắn gọn)
-    g.append("g")
-     .attr("transform", `translate(0,${height})`)
-     .call(d3.axisBottom(xScale).ticks(4).tickFormat(d3.timeFormat("%d/%m")))
-     .append("text")
-     .attr("x", width)
-     .attr("y", 30)
-     .attr("fill", "#666")
-     .attr("text-anchor", "end")
-     .style("font-size", "10px")
-     .text("Ngày");
+        const xAxisG = g.append("g")
+         .attr("class", "axis x-axis")
+         .attr("transform", `translate(0,${height})`)
+         .call(d3.axisBottom(xScale).ticks(4).tickFormat(d3.timeFormat("%d/%m")));
+
+        xAxisG.selectAll('text')
+            .attr('transform', null)
+            .style('text-anchor', 'middle')
+            .attr('dy', '0.35em')
+            .style('font-size', '11px');
+
+        // X label centered under the chart (consistent with Task8)
+        g.append('text')
+            .attr('class', 'chart-axis-label')
+            .attr('x', width / 2)
+            .attr('y', height + 30)
+            .attr('text-anchor', 'middle')
+            .text('Ngày');
 
     // 8. Vẽ Trục Y 
-    g.append("g")
-     .call(d3.axisLeft(yScale).ticks(5))
-     .append("text")
-     .attr("x", 5)
-     .attr("y", -5)
-     .attr("fill", "#666")
-     .attr("text-anchor", "start")
-     .style("font-size", "10px")
-     .text("Độ dài ban ngày (h)");
+        const yAxisG = g.append("g")
+         .attr('class', 'axis y-axis')
+         .call(d3.axisLeft(yScale).ticks(5));
+
+        // Y label rotated on the left, centered vertically like Task8
+        g.append('text')
+            .attr('class', 'chart-axis-label')
+            .attr('transform', `translate(-36, ${height / 2}) rotate(-90)`)
+            .attr('text-anchor', 'middle')
+            .text('Độ dài ban ngày (h)');
 
     // 9. Tạo hàm vẽ đường (D3 Line Generator)
     const line = d3.line()

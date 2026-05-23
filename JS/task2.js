@@ -52,7 +52,7 @@ async function loadAndRenderChart() {
       return (order[a.region] || 999) - (order[b.region] || 999);
     });
     
-    console.log('Dữ liệu gom nhóm:', avgTemperatureByRegion);
+    // debug log removed
     
     // 6. Lấy kích thước của SVG container hiện có
     const svgElement = d3.select('#chart-task2');
@@ -128,30 +128,40 @@ async function loadAndRenderChart() {
     
     // 12. Tạo trục X (Axis X)
     const xAxis = d3.axisBottom(xScale);
-    g.append('g')
-      .attr('class', 'x-axis')
+    const xAxisG = g.append('g')
+      .attr('class', 'axis x-axis')
       .attr('transform', `translate(0,${height})`)
-      .call(xAxis)
-      .style('font-size', '11px');
+      .call(xAxis);
+
+    // style ticks similar to Task8
+    xAxisG.selectAll('text')
+      .attr('transform', null)
+      .style('text-anchor', 'middle')
+      .style('font-size', '11px')
+      .attr('dy', '0.35em');
+
+    // X axis label (centered)
+    g.append('text')
+      .attr('class', 'chart-axis-label')
+      .attr('x', width / 2)
+      .attr('y', height + 30)
+      .attr('text-anchor', 'middle')
+      .text('Vùng');
     
     // 13. Tạo trục Y (Axis Y)
     const yAxis = d3.axisLeft(yScale)
       .ticks(5);  // Giảm số lượng tick
-    g.append('g')
-      .attr('class', 'y-axis')
-      .call(yAxis)
-      .style('font-size', '11px');
-    
-    // 14. Thêm nhãn cho trục Y (Nhiệt độ trung bình) - nằm ngoài SVG
-    svgElement.append('text')
-      .attr('class', 'y-label')
-      .attr('x', 15)
-      .attr('y', 10)
-      .attr('text-anchor', 'start')
-      .attr('font-size', '11px')
-      .attr('fill', '#666')
-      .text('°C');
-    console.log('✓ Biểu đồ đã được render thành công!');
+    const yAxisG = g.append('g')
+      .attr('class', 'axis y-axis')
+      .call(yAxis);
+
+    // Y axis label (rotated, centered)
+    g.append('text')
+      .attr('class', 'chart-axis-label')
+      .attr('transform', `translate(-36, ${height / 2}) rotate(-90)`)
+      .attr('text-anchor', 'middle')
+      .text('Nhiệt độ (°C)');
+    // debug log removed
     
   } catch (error) {
     console.error('Lỗi khi tải dữ liệu:', error);

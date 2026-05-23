@@ -72,14 +72,14 @@ function ensureTask10Chart() {
     task10State.brushLayer = task10State.root.append('g').attr('class', 'brush-layer');
 
     task10State.root.append('text')
-        .attr('class', 'axis-label')
+        .attr('class', 'chart-axis-label')
         .attr('x', task10State.innerWidth / 2)
         .attr('y', task10State.innerHeight + 34)
         .attr('text-anchor', 'middle')
         .text('Nhiệt độ (°C)');
 
     task10State.root.append('text')
-        .attr('class', 'axis-label')
+        .attr('class', 'chart-axis-label')
         .attr('transform', `translate(-36, ${task10State.innerHeight / 2}) rotate(-90)`)
         .attr('text-anchor', 'middle')
         .text('UV');
@@ -156,6 +156,13 @@ function updateScatterChart(records) {
         .transition()
         .duration(750)
         .call(axisBottom);
+
+    // Make x-axis ticks horizontal (parallel to axis) for Task10
+    task10State.xAxisGroup.selectAll('text')
+        .attr('transform', null)
+        .style('text-anchor', 'middle')
+        .attr('dy', '0.35em')
+        .style('font-size', '11px');
 
     task10State.yAxisGroup
         .transition()

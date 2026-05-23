@@ -10,7 +10,7 @@ document.addEventListener("dataChanged", function (event) {
     const regionData = event.detail.data;
     const regionName = event.detail.region;
     
-    console.log("Task 7 đang nhận vùng:", regionName, "- Data:", regionData);
+    // debug log removed
     
     if (!regionData) {
         alert("Lỗi: Không tìm thấy dữ liệu cho vùng " + regionName);
@@ -46,7 +46,9 @@ function initTask7Chart() {
     // Khởi tạo Trục (Scales)
     x7 = d3.scaleLinear().range([0, width7]);
     y7 = d3.scaleBand().range([0, height7]).padding(0.25);
-    colorScale7 = d3.scaleOrdinal().range(window.dashboardChartTheme.palette);
+    colorScale7 = d3.scaleOrdinal()
+        .domain(window.conditionOrder || [])
+        .range((window.conditionOrder || []).map(d => window.getConditionColor(d)));
 
     xAxisGroup7 = svg7.append("g").attr("class", "x-axis").attr("transform", `translate(0, ${height7})`);
     yAxisGroup7 = svg7.append("g").attr("class", "y-axis");
@@ -172,15 +174,33 @@ function updateTask7Chart(data) {
 
     // Cập nhật trục UI trượt theo — định dạng tick rõ ràng và giới hạn số tick
     xAxisGroup7.transition().duration(600)
-        .call(d3.axisBottom(x7).ticks(5).tickFormat(d3.format(',d')));
+        .call(d3.axisBottom(x7).ticks(5).tickFormat(d3.format('~s')));
 
     // Style x-axis tick text to avoid overlapping concatenation
     xAxisGroup7.selectAll('text')
+        .attr('transform', null)
+        .style('text-anchor', 'middle')
         .attr('dy', '0.35em')
-        .attr('font-size', '11px');
+        .style('font-size', '11px');
 
     yAxisGroup7.transition().duration(600).call(d3.axisLeft(y7));
     
     // Dọn dẹp nhãn (chỉ hiện khi click)
     svg7.selectAll(".value-label").remove();
+
+    // Add axis labels (consistent with Task8)
+    // X label: center bottom
+    svg7.append('text')
+        .attr('class', 'chart-axis-label')
+        .attr('x', width7 / 2)
+        .attr('y', height7 + margin7.bottom - 6)
+        .attr('text-anchor', 'middle')
+        .text('Số ngày');
+
+    // Y label: rotated left center
+    svg7.append('text')
+        .attr('class', 'chart-axis-label')
+        .attr('transform', `translate(${-margin7.left + 12}, ${height7/2}) rotate(-90)`)
+        .attr('text-anchor', 'middle')
+        .text('Trạng thái thời tiết');
 }

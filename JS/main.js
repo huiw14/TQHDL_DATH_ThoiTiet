@@ -307,9 +307,91 @@ window.appendChartHeader = function(svg, opts) {
 
 // Standard condition ordering used across charts (fallback if charts want fixed order)
 window.conditionOrder = ['Mưa', 'Nhiều Mây', 'Nắng', 'Dông Bão', 'Sương Mù'];
+window.conditionColors = {
+    'Mưa': '#4f46e5',
+    'Nhiều Mây': '#06b6d4',
+    'Nắng': '#f97316',
+    'Dông Bão': '#84cc16',
+    'Sương Mù': '#ec4899'
+};
+
+window.getConditionColor = function(condition) {
+    return window.conditionColors && window.conditionColors[condition]
+        ? window.conditionColors[condition]
+        : '#64748b';
+};
 
 // Safe formatter to avoid calling toFixed on null/undefined/non-numeric values
 window.safeFixed = function(val, digits = 1, fallback = '--') {
     const n = Number(val);
     return Number.isFinite(n) ? n.toFixed(digits) : fallback;
 };
+
+// Apply a consistent axis style across all charts to match Task 8 visuals.
+window.applyStandardAxes = function() {
+    try {
+        // X axis ticks: default to horizontal (parallel to axis)
+        d3.selectAll('.x-axis').selectAll('text')
+            .attr('transform', null)
+            .attr('text-anchor', 'middle')
+            .attr('dy', '0.35em')
+            .style('fill', 'var(--text-muted)')
+            .style('font-size', '11px')
+            .style('font-family', 'Inter, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif');
+
+        // Exception: Task8 keeps tilted labels (-30°)
+        d3.selectAll('#chart-task8 .x-axis').selectAll('text')
+            .attr('transform', 'rotate(-30)')
+            .attr('text-anchor', 'end')
+            .attr('dy', '0.35em');
+
+        // Y axis ticks: consistent color/size
+        d3.selectAll('.y-axis').selectAll('text')
+            .style('fill', 'var(--text-muted)')
+            .style('font-size', '11px')
+            .style('font-family', 'Inter, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif');
+
+        // Axis lines and grid colors
+        d3.selectAll('.x-axis path, .x-axis line, .y-axis path, .y-axis line')
+            .style('stroke', 'var(--border-color)')
+            .style('stroke-width', '1');
+
+        // Chart axis labels (titles) unify style
+        d3.selectAll('.chart-axis-label')
+            .style('fill', 'var(--text-muted)')
+            .style('font-size', '11px')
+            .style('font-family', 'Inter, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif');
+    } catch (e) {
+        console.warn('applyStandardAxes failed', e);
+    }
+};
+
+// Backwards-compatibility: normalize older 'axis-label' class used in some charts
+d3.selectAll('.axis-label').each(function() {
+    try {
+        const el = d3.select(this);
+        el.classed('chart-axis-label', true);
+        el.classed('axis-label', false);
+    } catch (e) { /* ignore */ }
+});
+
+// Ensure task11 / task1 axis tick styles are also normalized if they were rendered before scripts updated
+document.addEventListener('DOMContentLoaded', function () {
+    setTimeout(() => {
+        try {
+            d3.selectAll('#chart-task11 g[transform*="translate(0,"] text').attr('transform', null).style('text-anchor', 'middle').attr('dy', '0.35em');
+            d3.selectAll('#chart-task1 g[transform*="translate(0,"] text').attr('transform', null).style('text-anchor', 'middle').attr('dy', '0.35em');
+            // Ensure Task8 remains tilted
+            d3.selectAll('#chart-task8 g[transform*="translate(0,"] text').attr('transform', 'rotate(-30)').style('text-anchor', 'end').attr('dy', '0.35em');
+            d3.selectAll('#chart-task11 .chart-axis-label, #chart-task1 .chart-axis-label').style('font-size', '11px').style('fill', 'var(--text-muted)');
+        } catch (e) { console.warn('post-dom axis normalize failed', e); }
+    }, 300);
+});
+
+// Ensure axis styles are applied after charts update
+document.addEventListener('dataChanged', function () {
+    // defer slightly to allow charts to finish rendering/transitions
+    setTimeout(() => {
+        if (window.applyStandardAxes) window.applyStandardAxes();
+    }, 260);
+});

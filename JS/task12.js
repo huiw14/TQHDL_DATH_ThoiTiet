@@ -52,26 +52,62 @@ function drawTask12_ScatterPlot(data) {
                      .nice()
                      .range([height, 0]);
 
-    g.append("g")
-     .attr("transform", `translate(0,${height})`)
-     .call(d3.axisBottom(xScale).ticks(5))
-     .append("text")
-     .attr("x", width)
-     .attr("y", 30)
-     .attr("fill", "#666")
-     .attr("text-anchor", "end")
-     .style("font-size", "10px")
-     .text("Độ dài ban ngày (h)");
+        const xAxisG = g.append("g")
+         .attr("transform", `translate(0,${height})`)
+         .call(d3.axisBottom(xScale).ticks(5));
 
-    g.append("g")
-     .call(d3.axisLeft(yScale).ticks(5))
-     .append("text")
-     .attr("x", 5)
-     .attr("y", -5)
-     .attr("fill", "#666")
-     .attr("text-anchor", "start")
-     .style("font-size", "10px")
-     .text("UV");
+        // make ticks vertical for Task12, but keep axis label formatting like Task8
+        xAxisG.selectAll('text')
+            .attr('transform', null)
+            .style('text-anchor', 'middle')
+            .attr('dy', '0.35em')
+            .style('font-size', '11px')
+            .style('fill', 'var(--text-muted)');
+
+        // Make axis lines/ticks lighter to avoid bold appearance
+        xAxisG.selectAll('path, line')
+            .style('stroke', 'var(--border-color)')
+            .style('stroke-width', '0.6')
+            .style('stroke-opacity', 0.4);
+        xAxisG.selectAll('.tick line')
+            .style('stroke', 'var(--border-color)')
+            .style('stroke-width', '0.6')
+            .style('stroke-opacity', 0.5);
+        // Hide axis domain (baseline) to reduce perceived boldness
+        xAxisG.selectAll('.domain').style('stroke', 'none');
+        xAxisG.selectAll('text').style('font-weight', '400');
+
+        // X axis label centered under chart
+        g.append('text')
+            .attr('class', 'chart-axis-label')
+            .attr('x', width / 2)
+            .attr('y', height + 30)
+            .attr('text-anchor', 'middle')
+            .text('Độ dài ban ngày (h)');
+
+        const yAxisG = g.append("g")
+         .call(d3.axisLeft(yScale).ticks(5));
+
+        g.append('text')
+            .attr('class', 'chart-axis-label')
+            .attr('transform', `translate(-36, ${height / 2}) rotate(-90)`)
+            .attr('text-anchor', 'middle')
+            .text('UV');
+        // Style y axis text and lines to be muted (less bold)
+        yAxisG.selectAll('text')
+            .style('fill', 'var(--text-muted)')
+            .style('font-size', '11px')
+            .style('font-weight', '400');
+        yAxisG.selectAll('path, line')
+            .style('stroke', 'var(--border-color)')
+            .style('stroke-width', '0.6')
+            .style('stroke-opacity', 0.4);
+        yAxisG.selectAll('.tick line')
+            .style('stroke', 'var(--border-color)')
+            .style('stroke-width', '0.6')
+            .style('stroke-opacity', 0.5);
+        // Hide y axis domain (baseline) to reduce perceived boldness
+        yAxisG.selectAll('.domain').style('stroke', 'none');
 
     const tooltip = ensureTask12Tooltip();
     g.selectAll("circle")

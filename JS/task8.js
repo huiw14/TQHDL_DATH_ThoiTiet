@@ -182,6 +182,7 @@ function escapeHtml(str) {
 }
 
 document.addEventListener('dataChanged', function (event) {
+  // debug log removed
   renderTask8(event.detail.data || []);
 });
 

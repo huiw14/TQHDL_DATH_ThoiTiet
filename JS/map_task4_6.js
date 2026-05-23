@@ -360,7 +360,7 @@ function handleProvinceClick(event, feature) {
     }
   }
 
-  console.log('Clicked:', provinceDisplayName);
+  // debug log removed
 
   mapState.provinceLayer
     .selectAll('path')

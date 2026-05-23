@@ -32,7 +32,7 @@ function renderTask5() {
         const records = Array.isArray(rawData) ? rawData : Object.values(rawData).flat();
         if (!records.length) {
             chart5Container.append("p")
-                .text("Không có dữ liệu để hiển thị Task 5")
+                .text("Không có dữ liệu để hiển thị")
                 .style("color", "#334155");
             return;
         }
@@ -98,13 +98,15 @@ function renderTask5() {
             .call(d3.axisLeft(yScale).ticks(4).tickSize(-6).tickPadding(10));
 
         const xAxisGroup = chart.append("g")
-            .attr("class", "x-axis")
+            .attr("class", "axis x-axis")
             .attr("transform", `translate(0, ${innerHeight})`)
             .call(d3.axisBottom(xScale));
 
         xAxisGroup.selectAll("text")
-            .style("font-size", "11px")
-            .style("text-anchor", "middle")
+            .attr('transform', null)
+            .style('text-anchor', 'middle')
+            .style('font-size', '11px')
+            .attr('dy', '0.35em')
             .text(d => d === "Miền núi/Đồng bằng" ? "Miền núi / đồng bằng" : d);
 
         const tooltip = createTask5Tooltip();
@@ -150,15 +152,15 @@ function renderTask5() {
             .text(d => `${window.safeFixed(d.meanTemp,1,'--')}°C`);
 
         chart.append("text")
-            .attr("class", "axis-label")
+            .attr("class", "chart-axis-label")
             .attr("x", innerWidth / 2)
-            .attr("y", innerHeight + 52)
+            .attr("y", innerHeight + 48)
             .attr("text-anchor", "middle")
             .text("Nhóm địa hình");
 
         chart.append("text")
-            .attr("class", "axis-label")
-            .attr("transform", `translate(-42, ${innerHeight / 2}) rotate(-90)`)
+            .attr("class", "chart-axis-label")
+            .attr("transform", `translate(-36, ${innerHeight / 2}) rotate(-90)`)
             .attr("text-anchor", "middle")
             .text("Nhiệt độ (°C)");
     }).catch(error => {

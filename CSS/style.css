@@ -629,6 +629,20 @@ svg {
     gap: 15px;
 }
 
+/* Stack Task 2 and Task 5 vertically and make them full-width */
+.stacked-2-full {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.stacked-2-full .chart-tile {
+    width: 100%;
+}
+.stacked-2-full svg,
+.stacked-2-full .chart-wrapper {
+    width: 100% !important;
+}
+
 .analytical-layout {
     gap: 15px;
 }
@@ -924,7 +938,7 @@ body {
 
 .task7-9-grid {
     display: grid;
-    grid-template-columns: 1.2fr 0.9fr 0.9fr;
+    grid-template-columns: 1fr;
     gap: 14px;
 }
 
