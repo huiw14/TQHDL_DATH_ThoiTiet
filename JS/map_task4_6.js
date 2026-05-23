@@ -256,7 +256,23 @@ function renderStationDots(records) {
       .attr('class', 'station-dot')
       .attr('cx', d => d.x)
       .attr('cy', d => d.y)
-      .attr('r', 4),
+      .attr('r', 4)
+      .on('mouseenter', function(event, d) {
+        try {
+          mapState.tooltip.style('display', 'block').style('opacity', 1)
+            .html(`<strong>${escapeHtml(d.province)}</strong><br/>Lat: ${Number(d.lat).toFixed(3)}<br/>Lon: ${Number(d.lon).toFixed(3)}`);
+        } catch (e) {
+          mapState.tooltip.style('display', 'block').style('opacity', 1).html(`<strong>${escapeHtml(d.province)}</strong>`);
+        }
+      })
+      .on('mousemove', function(event) {
+        const x = event.clientX + 8;
+        const y = event.clientY + 8;
+        mapState.tooltip.style('left', `${x}px`).style('top', `${y}px`);
+      })
+      .on('mouseleave', function() {
+        mapState.tooltip.style('opacity', 0).style('display', 'none');
+      }),
     update => update
       .attr('cx', d => d.x)
       .attr('cy', d => d.y)
