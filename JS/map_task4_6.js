@@ -1,4 +1,6 @@
-// Choropleth Map - Task 4 + Task 6
+// File: JS/map_task4_6.js
+// Purpose: Render choropleth map of Vietnam with station dots and interactions (province hover/click)
+// Comment conventions: use concise single-line comments; annotate interactive handlers with `// NOTE:`.
 // Render vào: <svg id="vietnam-map"></svg>
 
 const mapState = {
@@ -192,37 +194,7 @@ function renderMap(records) {
 
   renderStationDots(safeRecords);
 
-  // --- Add a visual inset for southern islands (Trường Sa / Hoàng Sa)
-  mapState.svg.selectAll('.island-inset').remove();
-  try {
-    const insetW = 180;
-    const insetH = 120;
-    const insetX = mapState.width - insetW - 16;
-    const insetY = mapState.height - insetH - 16;
-
-    const inset = mapState.svg.append('g')
-      .attr('class', 'island-inset')
-      .attr('transform', `translate(${insetX}, ${insetY})`);
-
-    inset.append('rect')
-      .attr('width', insetW)
-      .attr('height', insetH)
-      .attr('fill', 'rgba(255,255,255,0.85)')
-      .attr('stroke', '#94a3b8')
-      .attr('stroke-dasharray', '4 3')
-      .attr('rx', 6)
-      .attr('ry', 6);
-
-    inset.append('text')
-      .attr('x', 10)
-      .attr('y', 18)
-      .attr('font-size', '12px')
-      .attr('font-weight', 600)
-      .text('Quần đảo Trường Sa / Hoàng Sa');
-
-  } catch (e) {
-    // ignore inset errors
-  }
+  // Island inset removed per user request (no inset displayed)
 }
 
 function buildProvinceTemperatureMap(records) {

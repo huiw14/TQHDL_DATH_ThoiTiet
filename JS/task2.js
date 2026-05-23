@@ -1,5 +1,6 @@
-// D3.js Bar Chart - So sánh nhiệt độ trung bình theo vùng ở Việt Nam
-// ============================================================
+// File: JS/task2.js
+// Purpose: Nhiệt độ trung bình theo miền (bar chart)
+// Comment conventions: `// NOTE:`, `// TODO:`, `// FIXME:`. Keep comments concise.
 
 // Hàm tải và xử lý dữ liệu
 async function loadAndRenderChart() {

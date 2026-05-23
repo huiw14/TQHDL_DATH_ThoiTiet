@@ -1040,3 +1040,12 @@ body {
         align-items: flex-start;
     }
 }
+
+/* Project comment conventions
+     - File: CSS/style.css
+     - Purpose: main stylesheet for dashboard visuals and layout
+     - Comment style: use short block comments `/* ... */` for section headers
+         and single-line comments `/* NOTE: ... */` for small notes. Keep comments
+         concise and focused on intent (no implementation details).
+     - Section headers: use one-line comments before major sections (e.g., "/* Header */").
+*/

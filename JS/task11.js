@@ -1,3 +1,6 @@
+// File: JS/task11.js
+// Purpose: Chu kỳ thay đổi độ dài ban ngày (line chart with hover interaction)
+// Comment conventions: keep comments succinct and sectioned.
 // Lắng nghe sự kiện đổi vùng dữ liệu từ main.js
 document.addEventListener("dataChanged", function (event) {
     const regionData = event.detail.data; // Mảng dữ liệu thời tiết của vùng được chọn

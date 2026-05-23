@@ -1,3 +1,8 @@
+// File: JS/main.js
+// Purpose: Load and enrich dataset, provide global dispatch `dispatchDataUpdate` and KPI helpers.
+// Comment conventions: use single-line `//` comments. Use `// NOTE:`, `// TODO:`, `// FIXME:` for annotations.
+// Keep comments concise and use sections (e.g. // Section: KPI) for readability.
+//
 // Biến toàn cục để các file task khác có thể truy cập
 window.globalWeatherData = {};
 window.dashboardChartTheme = window.dashboardChartTheme || {
@@ -141,9 +146,7 @@ function dispatchDataUpdate(regionName, provinceName) {
 
 window.dispatchDataUpdate = dispatchDataUpdate;
 
-// ==========================================
-// THỰC THI TASK 3: KPI CARDS
-// ==========================================
+// Section: KPI Cards — render and update mini-dashboard metrics
 document.addEventListener("dataChanged", function (event) {
     const regionName = event.detail && event.detail.region;
     const provinceName = event.detail && event.detail.province;

@@ -1,4 +1,6 @@
-// Task 3: Mini Dashboard với chi tiết vùng khi click
+// File: JS/task3.js
+// Purpose: KPI mini-dashboard showing selected region/province metrics and condition list.
+// Comment conventions: Use short, informative comments; prefer `// NOTE:` for important notes.
 // Click vào tên vùng -> Update Detail Card
 
 let weatherData = null;

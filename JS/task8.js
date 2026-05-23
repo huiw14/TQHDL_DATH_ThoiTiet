@@ -1,4 +1,6 @@
-// D3.js Bar Chart - Nhiệt độ trung bình theo trạng thái thời tiết
+// File: JS/task8.js
+// Purpose: Nhiệt độ theo từng kiểu thời tiết (reference visual style)
+// Comment conventions: single-line `//` comments; prefer concise notes.
 
 let task8CurrentData = [];
 let task8ColorScale;

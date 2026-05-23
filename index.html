@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Thời Tiết Việt Nam - Nhóm 5</title>
+        <!--
+            File: index.html
+            Purpose: Main static page for dashboard submission.
+            Comment conventions: Use HTML comments <!-- ... --> for file-level notes.
+            Keep comments short and place section descriptors near related markup.
+        -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -29,7 +35,7 @@
         <div class="kpi-panel-header">
             <div>
                 <h2>Chỉ số vùng đang chọn</h2>
-                <p>Vùng: <span id="detail-region">Chưa chọn</span> | Tỉnh: <span id="detail-province">Chưa chọn</span> | Trạng thái: <span id="kpi-condition">--</span></p>
+                <p>Vùng: <span id="detail-region">Chưa chọn</span> | Tỉnh: <span id="detail-province">Chưa chọn</span></p>
             </div>
         </div>
         <div class="kpi-cards-grid">
@@ -80,11 +86,11 @@
                 </div>
                 <div class="timeline-grid">
                     <div class="chart-tile">
-                        <h3>Phân bố nhiệt độ theo thời gian</h3>
+                        <h3>Biến động nhiệt độ theo thời gian</h3>
                         <div id="chart-task1" class="chart-wrapper chart-panel"></div>
                     </div>
                     <div class="chart-tile">
-                        <h3>Đường xu hướng theo thời gian</h3>
+                        <h3>Chu kỳ thay đổi độ dài ban ngày</h3>
                         <svg id="chart-task11" width="100%" height="320"></svg>
                     </div>
                 </div>
@@ -98,11 +104,11 @@
                 </div>
                 <div class="stacked-2-full">
                     <div class="chart-tile">
-                        <h3>Nhiệt độ giữa các vùng</h3>
+                        <h3>Nhiệt độ trung bình theo miền</h3>
                         <svg id="chart-task2" width="100%" height="320"></svg>
                     </div>
                     <div class="chart-tile">
-                        <h3>Địa hình</h3>
+                        <h3>Nhiệt độ ở Ven biển vs. Nội địa</h3>
                         <div id="chart-task5" class="chart-wrapper chart-panel" style="min-height:320px;"></div>
                     </div>
                 </div>
@@ -114,17 +120,20 @@
                 </div>
                 <div class="task7-9-grid">
                     <div class="chart-tile">
-                        <h3>Tần suất trạng thái</h3>
+                        <h3>Tần suất xuất hiện các kiểu thời tiết</h3>
                         <div id="chart-task7" class="chart-wrapper chart-panel"></div>
                     </div>
                     <div class="chart-tile">
-                        <h3>So sánh cơ cấu trạng thái theo vùng</h3>
+                        <h3>Cơ cấu phân bổ thời tiết giữa các miền</h3>
                         <div id="bar-task9" class="chart-wrapper chart-panel"></div>
                     </div>
                 </div>
             </section>
 
             <section id="task8-container" class="card dashboard-section">
+                <div class="section-header">
+                    <h2>Nhiệt độ theo từng kiểu thời tiết</h2>
+                </div>
                 <div id="chart-task8" class="chart-panel chart-panel-large"></div>
             </section>
         </section>
@@ -136,11 +145,11 @@
                 </div>
                 <div class="scatter-grid">
                     <div class="chart-tile">
-                        <h3>Nhiệt độ và UV</h3>
+                        <h3>Tương quan giữa Nhiệt độ và UV</h3>
                         <svg id="chart-task10" width="100%" height="230"></svg>
                     </div>
                     <div class="chart-tile">
-                        <h3>Độ dài ban ngày và UV</h3>
+                        <h3>Tương quan giữa Độ dài ban ngày và UV</h3>
                         <svg id="chart-task12" width="100%" height="230"></svg>
                     </div>
                 </div>

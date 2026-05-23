@@ -1,4 +1,6 @@
-// Task 9: So sánh cơ cấu trạng thái thời tiết giữa các vùng
+// File: JS/task9.js
+// Purpose: Cơ cấu phân bổ thời tiết giữa các miền (100% stacked bar)
+// Comment conventions: single-line comments and clear section headings.
 
 let chart9Svg, chart9Root, chart9X, chart9Y, chart9XAxis, chart9YAxis;
 let task9Tooltip;

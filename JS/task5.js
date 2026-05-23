@@ -1,4 +1,6 @@
-// File js/task5.js
+// File: JS/task5.js
+// Purpose: Nhiệt độ ở Ven biển vs. Nội địa (bar chart comparing coastal vs inland)
+// Comments: keep hover/tooltip and transition logic documented with `// NOTE:` where needed.
 
 const chart5Container = d3.select("#chart-task5");
 const chart5TooltipId = "task5-tooltip";

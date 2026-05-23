@@ -1,4 +1,6 @@
-// Task 1: Biểu đồ xu hướng nhiệt độ
+// File: JS/task1.js
+// Purpose: Biến động nhiệt độ theo thời gian (line/area + points)
+// Comment conventions: `// NOTE:`, `// TODO:`, `// FIXME:`. Keep comments concise.
 
 const task1Container = d3.select("#chart-task1");
 const task1TooltipId = "task1-tooltip";

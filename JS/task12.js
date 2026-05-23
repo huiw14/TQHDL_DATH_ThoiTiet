@@ -1,3 +1,6 @@
+// File: JS/task12.js
+// Purpose: Tương quan giữa Độ dài ban ngày và UV (scatter with regression)
+// Comment conventions: single-line `//` comments; `// NOTE:` for important notes.
 // Lắng nghe sự kiện đổi vùng dữ liệu từ main.js
 document.addEventListener("dataChanged", function (event) {
     const regionData = event.detail.data; // Mảng dữ liệu thời tiết của vùng được chọn
@@ -52,9 +55,10 @@ function drawTask12_ScatterPlot(data) {
                      .nice()
                      .range([height, 0]);
 
-        const xAxisG = g.append("g")
-         .attr("transform", `translate(0,${height})`)
-         .call(d3.axisBottom(xScale).ticks(5));
+            const xAxisG = g.append("g")
+                .attr('class', 'axis x-axis')
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(xScale).ticks(5));
 
         // make ticks vertical for Task12, but keep axis label formatting like Task8
         xAxisG.selectAll('text')
@@ -86,6 +90,7 @@ function drawTask12_ScatterPlot(data) {
             .text('Độ dài ban ngày (h)');
 
         const yAxisG = g.append("g")
+         .attr('class', 'axis y-axis')
          .call(d3.axisLeft(yScale).ticks(5));
 
         g.append('text')

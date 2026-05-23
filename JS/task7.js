@@ -1,3 +1,6 @@
+// File: JS/task7.js
+// Purpose: Tần suất xuất hiện các kiểu thời tiết (horizontal bars)
+// Comment conventions: single-line `//` comments; use `// NOTE:` or `// TODO:` for highlights.
 // Biến toàn cục để tái sử dụng
 let svg7, x7, y7, xAxisGroup7, yAxisGroup7;
 let width7, height7;

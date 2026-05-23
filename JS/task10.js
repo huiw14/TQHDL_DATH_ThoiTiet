@@ -1,4 +1,6 @@
-// Task 10: Biểu đồ phân tán Nhiệt độ và UV
+// File: JS/task10.js
+// Purpose: Tương quan giữa Nhiệt độ và UV (scatter + regression)
+// Comment conventions: single-line `//` comments. Mark interactions clearly with `// NOTE:`.
 
 const task10Container = d3.select("#chart-task10");
 
